@@ -4,11 +4,12 @@
 
 ## 1. Requisitos
 
-| Herramienta | Versión                              | Para qué                           |
-| ----------- | ------------------------------------ | ---------------------------------- |
-| Node.js     | ≥ 24                                 | Ejecutar las herramientas y la API |
-| pnpm        | 12.18.0 (fijada en `packageManager`) | Gestor de paquetes del monorepo    |
-| Git         | Cualquier versión reciente           | Control de versiones               |
+| Herramienta | Versión                              | Para qué                            |
+| ----------- | ------------------------------------ | ----------------------------------- |
+| Node.js     | ≥ 24                                 | Ejecutar las herramientas y la API  |
+| pnpm        | 12.18.0 (fijada en `packageManager`) | Gestor de paquetes del monorepo     |
+| Git         | Cualquier versión reciente           | Control de versiones                |
+| Docker      | Con `docker compose` v2              | Base local y pruebas de integración |
 
 pnpm se obtiene con **corepack**, que viene incluido con Node.js:
 
@@ -32,13 +33,22 @@ pnpm install
 
 ## 3. Validaciones
 
-| Comando          | Qué hace                                                                       | ¿Requiere Docker? |
-| ---------------- | ------------------------------------------------------------------------------ | ----------------- |
-| `pnpm check`     | Formato, lint, tipos y pruebas unitarias. **Debe pasar antes de cada commit.** | No                |
-| `pnpm format`    | Aplica el formato de Prettier                                                  | No                |
-| `pnpm lint`      | ESLint en todo el monorepo                                                     | No                |
-| `pnpm typecheck` | Ejecuta `tsc --noEmit` en cada paquete                                         | No                |
-| `pnpm test`      | Pruebas unitarias (Vitest) de cada paquete                                     | No                |
+| Comando                  | Qué hace                                                                                                                      | ¿Requiere Docker? |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| `pnpm check`             | Formato, lint, tipos, pruebas unitarias y frontera V1/V2. **Debe pasar antes de cada commit.**                                | No                |
+| `pnpm format`            | Aplica el formato de Prettier                                                                                                 | No                |
+| `pnpm lint`              | ESLint en todo el monorepo                                                                                                    | No                |
+| `pnpm typecheck`         | Ejecuta `tsc --noEmit` en cada paquete                                                                                        | No                |
+| `pnpm test`              | Pruebas unitarias (Vitest) de cada paquete                                                                                    | No                |
+| `pnpm check:boundary`    | Falla si el código ejecutable contiene términos de nómina ([ADR 0006](../adr/0006-v1-v2-separation-and-versioned-closure.md)) | No                |
+| `pnpm build`             | Compila la web                                                                                                                | No                |
+| `pnpm test:integration`  | Integración contra PostgreSQL 18 (Testcontainers): RLS, inmutabilidad, auditoría, ingesta                                     | **Sí**            |
+| `pnpm test:e2e`          | API por HTTP (supertest) contra PostgreSQL 18                                                                                 | **Sí**            |
+| `pnpm db:up` / `db:down` | Levanta o detiene la base local (`infra/docker-compose.yml`)                                                                  | **Sí**            |
+| `pnpm db:migrate`        | Crea el rol de aplicación y aplica las migraciones                                                                            | **Sí** (base)     |
+| `pnpm dev`               | API (`:3000`) y web (`:5173`) en modo desarrollo                                                                              | **Sí** (base)     |
+
+Si cambias la base de datos o la API, además de `pnpm check` deben pasar `pnpm test:integration` y `pnpm test:e2e`. Para arrancar el entorno local, ver [`docs/operations/local.md`](../operations/local.md).
 
 ## 4. Configuración compartida
 
@@ -52,6 +62,10 @@ Las herramientas comunes se configuran en la raíz. No hay un paquete `packages/
 | `.editorconfig` / `.gitattributes`     | Fin de línea LF. La landing se preserva byte a byte.    |
 
 **Versiones fijadas:** TypeScript queda en 6.0.x porque `typescript-eslint` 8 todavía no admite TypeScript ≥ 6.1.
+
+**Scripts de instalación:** `pnpm-workspace.yaml` deniega explícitamente (`allowBuilds`) los scripts de instalación de las dependencias. Si una dependencia nueva necesita compilar, se aprueba ahí, con una justificación.
+
+**Decoradores en la API:** NestJS usa decoradores heredados (`experimentalDecorators`) sin `emitDecoratorMetadata`. Por eso cada dependencia se inyecta con `@Inject(TOKEN)` explícito.
 
 ## 5. Antes de contribuir
 

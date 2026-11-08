@@ -21,24 +21,34 @@ Cada documento declara su estado al inicio:
 | Versiones    | [versions/v2-boundary.md](versions/v2-boundary.md): frontera con la V2 (nómina)                           | Aprobado     |
 | Decisiones   | [adr/](adr/): registro de decisiones (plantilla en `0000-template.md`)                                    | Aprobado     |
 | Arquitectura | [architecture/conventions.md](architecture/conventions.md): convenciones de nombres y capas               | Aprobado     |
+| Arquitectura | [architecture/overview.md](architecture/overview.md): visión general de lo que existe                     | Implementado |
 | Arquitectura | [architecture/planned-design-v1.md](architecture/planned-design-v1.md): diseño de los pasos 1.0-b a 1.0-g | Planificado  |
+| Datos        | [data-model/README.md](data-model/README.md): tablas, RLS, restricciones y triggers                       | Implementado |
+| Reglas       | [business-rules/tenancy.md](business-rules/tenancy.md): aislamiento entre empresas                        | Implementado |
+| Reglas       | [business-rules/immutability.md](business-rules/immutability.md): marcaciones y auditoría inmutables      | Implementado |
+| Reglas       | [business-rules/audit.md](business-rules/audit.md): auditoría transaccional y acciones registradas        | Implementado |
+| API          | [api/README.md](api/README.md): contratos HTTP y errores                                                  | Implementado |
+| Seguridad    | [security/README.md](security/README.md): controles vigentes                                              | Implementado |
 | Seguridad    | [security/offline.md](security/offline.md): riesgos del registro sin conexión                             | Planificado  |
+| Desarrollo   | [development/onboarding.md](development/onboarding.md): guía de incorporación y comandos                  | Implementado |
+| Desarrollo   | [development/module-template.md](development/module-template.md): plantilla del README de módulo          | Aprobado     |
+| Operación    | [operations/local.md](operations/local.md): entorno local                                                 | Implementado |
 | Landing      | [landing.md](landing.md): landing pública en la raíz                                                      | Implementado |
 | Legal        | [legal-references.md](legal-references.md): inventario de referencias (contexto, no asesoría)             | Aprobado     |
 | Histórico    | [proposals/propuesta-tecnica-v1.md](proposals/propuesta-tecnica-v1.md): propuesta original                | Histórico    |
 
 ## Estado de los módulos
 
-| Módulo                                                 | Paso  | Estado          |
-| ------------------------------------------------------ | ----- | --------------- |
-| Base del monorepo                                      | 1.0-a | En construcción |
-| `tenancy`, `audit`, persistencia de `attendance_event` | 1.0-a | En construcción |
-| `identity` (autenticación, roles, permisos)            | 1.0-b | Planificado     |
-| `employees`, `schedules`, `period-calendars`           | 1.0-c | Planificado     |
-| `time-tracking` (ingesta, PWA), `workdays`             | 1.0-d | Planificado     |
-| `periods` (cierre, conformidad, reapertura)            | 1.0-e | Planificado     |
-| `incidents`, `clarifications`, `corrections`           | 1.0-f | Planificado     |
-| `reports`                                              | 1.0-g | Planificado     |
+| Módulo                                                 | Paso  | Estado                                 |
+| ------------------------------------------------------ | ----- | -------------------------------------- |
+| Base del monorepo (contratos, reglas, db, api, web)    | 1.0-a | Implementado (pendiente de aceptación) |
+| `tenancy`, `audit`, persistencia de `attendance_event` | 1.0-a | Implementado (pendiente de aceptación) |
+| `identity` (autenticación, roles, permisos)            | 1.0-b | Planificado                            |
+| `employees`, `schedules`, `period-calendars`           | 1.0-c | Planificado                            |
+| `time-tracking` (ingesta, PWA), `workdays`             | 1.0-d | Planificado                            |
+| `periods` (cierre, conformidad, reapertura)            | 1.0-e | Planificado                            |
+| `incidents`, `clarifications`, `corrections`           | 1.0-f | Planificado                            |
+| `reports`                                              | 1.0-g | Planificado                            |
 
 ## ADRs
 

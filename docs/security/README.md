@@ -1,0 +1,31 @@
+# Seguridad
+
+> **Estado: Implementado (1.0-a)**, salvo donde se indica. Los riesgos del modo sin conexión están en [`offline.md`](offline.md) (**Planificado**).
+
+## Controles vigentes
+
+| Control                     | Implementación                                                                               | Prueba                         |
+| --------------------------- | -------------------------------------------------------------------------------------------- | ------------------------------ |
+| Autorización por empresa    | `TenantGuard`: 401 sin sesión, 404 sin membresía                                             | `tenant.guard.test.ts`, e2e    |
+| Aislamiento en la base      | RLS `ENABLE` + `FORCE`, `app_current_tenant()` que falla cerrada                             | `tenant-isolation.int.test.ts` |
+| Rol de mínimo privilegio    | `puntuale_app`: sin superusuario, sin `BYPASSRLS`, sin ser dueño, permisos por tabla         | `migrations.int.test.ts`       |
+| Inmutabilidad               | Sin `UPDATE`/`DELETE` para el rol y trigger `reject_mutation()`                              | `immutability.int.test.ts`     |
+| Auditoría                   | Misma transacción que el cambio                                                              | `audit.int.test.ts`            |
+| Sin atajos de autenticación | `NoSessionResolver` fuera de pruebas; `TestSessionResolver` falla si `NODE_ENV` no es `test` | `session-resolver.test.ts`     |
+| Errores sin fugas           | `ApiExceptionFilter`: sin SQL, pilas ni valores en las respuestas                            | e2e                            |
+| Configuración               | Validada al arrancar; el error no muestra valores                                            | `app-config.test.ts`           |
+| Secretos                    | `.env` ignorado; `.env.example` ficticio; gitleaks en CI                                     | CI (`secrets`)                 |
+| Dependencias                | Versiones fijadas; scripts de instalación denegados (`allowBuilds`)                          | `pnpm install`                 |
+
+## Reglas para contribuir
+
+1. Nunca uses la conexión administrativa desde la API.
+2. Nunca confíes en un `tenant_id` del cliente: usa el del `TenantContext`.
+3. Nunca agregues un resolvedor de sesión que acepte identidades sin verificar fuera de `test`.
+4. No subas secretos, datos reales ni los PDF legales (repositorio público).
+
+## Pendiente (Planificado)
+
+- Autenticación, sesiones, roles y permisos (1.0-b, [ADR 0007](../adr/0007-own-authentication.md)).
+- Límites de tasa y cabeceras de seguridad HTTP (1.0-b).
+- Cadena de hashes en la auditoría (1.x, [ADR 0005](../adr/0005-transactional-audit.md)).

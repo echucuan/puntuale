@@ -2,7 +2,7 @@
 
 **Plataforma de control de asistencia para empresas en México.** Registra entradas y salidas, organiza las jornadas, permite revisarlas, aclararlas y corregirlas con historial, y cierra cada periodo con un reporte de asistencia e incidencias. Con ese reporte, cada empresa prepara su nómina en su propio sistema.
 
-> **Estado:** en construcción, paso **1.0-a** (base del monorepo). Todavía no hay funcionalidad de negocio utilizable. El avance por módulo está en [`docs/README.md`](docs/README.md).
+> **Estado:** en construcción, paso **1.0-a** (base del monorepo: multiempresa con RLS, auditoría e ingesta idempotente, sin autenticación todavía). Todavía no hay funcionalidad de negocio utilizable. El avance por módulo está en [`docs/README.md`](docs/README.md).
 
 ## Versiones
 
@@ -18,7 +18,15 @@ Más detalle en [`docs/versions/v1-scope.md`](docs/versions/v1-scope.md) y [`doc
 | Ruta                                               | Contenido                                                                                                                                                                          |
 | -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `index.html`, `styles.css`, `script.js`, `assets/` | **Landing pública**, publicada en <https://echucuan.github.io/puntuale/>. Es una demostración ilustrativa, no una aplicación productiva. Ver [`docs/landing.md`](docs/landing.md). |
+| `apps/api/`                                        | API (NestJS): salud, contexto de empresa, auditoría e ingesta idempotente de marcaciones.                                                                                          |
+| `apps/web/`                                        | Aplicación web (React + Vite): por ahora, solo la pantalla base.                                                                                                                   |
+| `packages/`                                        | `contracts` (esquemas compartidos), `domain-rules` (reglas puras) y `ui` (tokens de marca).                                                                                        |
+| `db/`, `infra/`                                    | Migraciones SQL con RLS y PostgreSQL 18 local con docker compose.                                                                                                                  |
 | `docs/`                                            | Arquitectura, decisiones (ADRs), alcance de cada versión y referencias.                                                                                                            |
+
+## Desarrollo
+
+Ver la [guía de incorporación](docs/development/onboarding.md). En resumen: `pnpm install`, `pnpm check` (sin Docker) y, con Docker, `pnpm test:integration` y `pnpm test:e2e`.
 
 ## Documentación
 
