@@ -16,3 +16,5 @@ Todos los cambios relevantes del proyecto se registran aquí. El formato se basa
   - inventario de referencias legales;
   - documentación de la landing;
   - propuesta original archivada como histórica.
+- Herramientas del monorepo: workspaces de pnpm 12, TypeScript 6.0 estricto (`tsconfig.base.json`), ESLint 10 con `typescript-eslint`, Prettier 3 y el comando `pnpm check`.
+- Guía de incorporación (`docs/development/onboarding.md`).

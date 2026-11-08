@@ -18,11 +18,11 @@ Una o dos frases: qué problema resuelve el módulo.
 
 ## Dependencias
 
-| Depende de | Para qué |
-|---|---|
-| Otros módulos (solo a través de su servicio de aplicación o de eventos) | |
-| Paquetes (`@puntuale/contracts`, `@puntuale/domain-rules`) | |
-| Tablas propias | |
+| Depende de                                                              | Para qué |
+| ----------------------------------------------------------------------- | -------- |
+| Otros módulos (solo a través de su servicio de aplicación o de eventos) |          |
+| Paquetes (`@puntuale/contracts`, `@puntuale/domain-rules`)              |          |
+| Tablas propias                                                          |          |
 
 ## Reglas de negocio
 
@@ -30,16 +30,16 @@ Reglas numeradas, cada una con su ADR y su prueba.
 
 ## Entradas y salidas
 
-| Tipo | Nombre | Contrato |
-|---|---|---|
-| Endpoint | `GET /api/t/:tenantId/...` | `XxxSchema` en `@puntuale/contracts` |
-| Evento emitido | `<modulo>.<entidad>.<verbo>` | |
-| Acción auditada | | |
+| Tipo            | Nombre                       | Contrato                             |
+| --------------- | ---------------------------- | ------------------------------------ |
+| Endpoint        | `GET /api/t/:tenantId/...`   | `XxxSchema` en `@puntuale/contracts` |
+| Evento emitido  | `<modulo>.<entidad>.<verbo>` |                                      |
+| Acción auditada |                              |                                      |
 
 ## Pruebas relacionadas
 
 | Archivo | Qué verifica |
-|---|---|
+| ------- | ------------ |
 
 ## Cómo extenderlo
 

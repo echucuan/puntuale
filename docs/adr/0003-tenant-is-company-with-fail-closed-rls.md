@@ -27,6 +27,7 @@ Puntuale guarda los datos laborales de varias empresas en la misma base de datos
   3. Busca un `user_tenant` activo para ese usuario y ese tenant. Si no existe, responde **404**, para no revelar si la empresa existe.
 
   **La URL nunca da acceso por sí sola.**
+
 - **RLS como defensa adicional que falla cerrada:**
   - Cada transacción fija `app.tenant_id` con `set_config(..., true)`, el equivalente a `SET LOCAL`.
   - `app_current_tenant()` devuelve `NULL`, sin lanzar errores, cuando la variable falta o no es un UUID válido.

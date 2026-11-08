@@ -6,15 +6,15 @@
 
 ## 1. Módulos y pasos de entrega
 
-| Paso | Módulos |
-|---|---|
-| 1.0-a | Base del monorepo, `tenancy` (contexto), `audit`, persistencia de `attendance_event` |
+| Paso  | Módulos                                                                                                    |
+| ----- | ---------------------------------------------------------------------------------------------------------- |
+| 1.0-a | Base del monorepo, `tenancy` (contexto), `audit`, persistencia de `attendance_event`                       |
 | 1.0-b | `identity`: autenticación, roles, permisos, `ScopePolicy`, `GET /api/me/tenants`; incorporación de Drizzle |
-| 1.0-c | `employees`, `schedules` (horarios versionados, festivos, excepciones), `period-calendars` |
-| 1.0-d | `time-tracking` (endpoint de ingesta, PWA, cola sin conexión), `workdays` (`buildWorkday`), `review_flag` |
-| 1.0-e | `periods`: periodos, cierre versionado, conformidad, reapertura |
-| 1.0-f | `incidents`, `clarifications`, `corrections` |
-| 1.0-g | `reports`: reportes de asistencia e incidencias, exportación |
+| 1.0-c | `employees`, `schedules` (horarios versionados, festivos, excepciones), `period-calendars`                 |
+| 1.0-d | `time-tracking` (endpoint de ingesta, PWA, cola sin conexión), `workdays` (`buildWorkday`), `review_flag`  |
+| 1.0-e | `periods`: periodos, cierre versionado, conformidad, reapertura                                            |
+| 1.0-f | `incidents`, `clarifications`, `corrections`                                                               |
+| 1.0-g | `reports`: reportes de asistencia e incidencias, exportación                                               |
 
 ## 2. Calendarios y periodos
 
@@ -26,14 +26,14 @@
 
 **`attendance_period`**
 
-| Campo | Notas |
-|---|---|
-| `id`, `tenant_id` | |
-| **`period_calendar_id`** | Calendario al que pertenece el periodo |
-| `start_date`, `end_date` | Fechas locales; ambos días cuentan |
-| **`timezone`** | Se congela al crear el periodo |
-| **`rules_version`** | |
-| `status` | `open`, `in_review`, `closed` o `reopened` |
+| Campo                         | Notas                                                 |
+| ----------------------------- | ----------------------------------------------------- |
+| `id`, `tenant_id`             |                                                       |
+| **`period_calendar_id`**      | Calendario al que pertenece el periodo                |
+| `start_date`, `end_date`      | Fechas locales; ambos días cuentan                    |
+| **`timezone`**                | Se congela al crear el periodo                        |
+| **`rules_version`**           |                                                       |
+| `status`                      | `open`, `in_review`, `closed` o `reopened`            |
 | **`current_closure_version`** | Valor de solo lectura; se calcula como `max(version)` |
 
 Restricciones:
@@ -54,7 +54,7 @@ La identidad de una `workday` es su **llave natural**, que nunca depende del ord
 
 - **Jornada programada:** `(tenant_id, employee_id, operational_date, assignment_id, schedule_version_id, shift_instance)`. `shift_instance` es el índice del turno **dentro de la definición del horario** de ese día, no de los eventos.
 - **Jornada no programada:** `(tenant_id, employee_id, operational_date, 'unscheduled')`. Hay como máximo una por colaborador y fecha operativa, y todos los eventos no programados de esa fecha se agrupan en ella.
-- La función `workdayNaturalKey()` está en `@puntuale/domain-rules` (implementada en 1.0-a y probada con eventos tardíos). La tabla `workday` tendrá una restricción única sobre esa llave. Recalcular hace un *upsert* sobre la llave, así que una entrada tardía nunca crea otra jornada.
+- La función `workdayNaturalKey()` está en `@puntuale/domain-rules` (implementada en 1.0-a y probada con eventos tardíos). La tabla `workday` tendrá una restricción única sobre esa llave. Recalcular hace un _upsert_ sobre la llave, así que una entrada tardía nunca crea otra jornada.
 - `derived_worked_minutes` y `derived_expected_minutes` son **valores derivados**. Llevan `rules_version` y `computed_at`.
 
 ## 4. Estados y precedencia (ajuste 2.1)
@@ -71,14 +71,14 @@ Ver [ADR 0012](../adr/0012-attendance-status-and-precedence.md). La precedencia 
 
 **`review_flag`**
 
-| Campo | Notas |
-|---|---|
-| `id`, `tenant_id`, `workday_id` | |
-| `incident_id` | Opcional |
-| `code` | `LATE`, `MISSING_IN`, `MISSING_OUT`, `OUTSIDE_SCHEDULE`, `CLOCK_SKEW`, `DAILY_LIMIT`, `WEEKLY_LIMIT`, `LATE_EVENT_AFTER_CLOSE` |
-| `origin_rule`, `rules_version` | Regla que generó la alerta |
-| `status` | `open`, `resolved` o `dismissed` |
-| `resolved_by`, `resolved_at`, `resolution_reason` | |
+| Campo                                             | Notas                                                                                                                          |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `id`, `tenant_id`, `workday_id`                   |                                                                                                                                |
+| `incident_id`                                     | Opcional                                                                                                                       |
+| `code`                                            | `LATE`, `MISSING_IN`, `MISSING_OUT`, `OUTSIDE_SCHEDULE`, `CLOCK_SKEW`, `DAILY_LIMIT`, `WEEKLY_LIMIT`, `LATE_EVENT_AFTER_CLOSE` |
+| `origin_rule`, `rules_version`                    | Regla que generó la alerta                                                                                                     |
+| `status`                                          | `open`, `resolved` o `dismissed`                                                                                               |
+| `resolved_by`, `resolved_at`, `resolution_reason` |                                                                                                                                |
 
 **Idempotencia.**
 
@@ -89,15 +89,15 @@ Ver [ADR 0012](../adr/0012-attendance-status-and-precedence.md). La precedencia 
 
 Las reglas son deterministas y versionadas, y viven en `attendance_rules` por tenant:
 
-| Regla | Valor por defecto |
-|---|---|
-| `pre_margin` | 120 min |
-| `post_margin` | 240 min |
-| `max_workday_duration` | 16 h |
-| `late_tolerance` | 10 min |
-| `double_tap_window` | 60 s |
-| `clock_skew_threshold` | 300 s |
-| `max_offline_age` | 72 h |
+| Regla                  | Valor por defecto |
+| ---------------------- | ----------------- |
+| `pre_margin`           | 120 min           |
+| `post_margin`          | 240 min           |
+| `max_workday_duration` | 16 h              |
+| `late_tolerance`       | 10 min            |
+| `double_tap_window`    | 60 s              |
+| `clock_skew_threshold` | 300 s             |
+| `max_offline_age`      | 72 h              |
 
 **Ventanas y asignación**
 
@@ -117,7 +117,7 @@ Es una máquina de dos estados (`OUT` → `IN` → `OUT`). Los eventos se ordena
 - Se permiten tres o más pares; los huecos entre ellos son pausas.
 - Los eventos tardíos o fuera de orden obligan a recalcular todo el conjunto efectivo.
 
-**Función pura.** `buildWorkday(events, scheduleSnapshot, rules)` se implementará en el paso 1.0-d, con *property tests*.
+**Función pura.** `buildWorkday(events, scheduleSnapshot, rules)` se implementará en el paso 1.0-d, con _property tests_.
 
 ## 7. Modo sin conexión
 
@@ -132,18 +132,18 @@ Ver [ADR 0011](../adr/0011-offline-ingest-and-idempotency.md) y [`../security/of
 
 **`incident`**
 
-| Campo | Notas |
-|---|---|
-| `employee_id` | |
-| `attendance_event_id`, `period_id` | Opcionales |
-| Rango de fechas | Se liga a jornadas mediante `incident_workday` |
-| `incident_type_id` | |
-| `origin` | `detected` o `requested` |
-| `status` | Ver [ADR 0012](../adr/0012-attendance-status-and-precedence.md) |
-| `created_by_user_id`, `assignee_user_id` | |
-| `resolved_by`, `resolved_at`, `resolution_reason` | |
-| `justified_by_incident_id` | Opcional |
-| Evidencia | |
+| Campo                                             | Notas                                                           |
+| ------------------------------------------------- | --------------------------------------------------------------- |
+| `employee_id`                                     |                                                                 |
+| `attendance_event_id`, `period_id`                | Opcionales                                                      |
+| Rango de fechas                                   | Se liga a jornadas mediante `incident_workday`                  |
+| `incident_type_id`                                |                                                                 |
+| `origin`                                          | `detected` o `requested`                                        |
+| `status`                                          | Ver [ADR 0012](../adr/0012-attendance-status-and-precedence.md) |
+| `created_by_user_id`, `assignee_user_id`          |                                                                 |
+| `resolved_by`, `resolved_at`, `resolution_reason` |                                                                 |
+| `justified_by_incident_id`                        | Opcional                                                        |
+| Evidencia                                         |                                                                 |
 
 **`incident_type`**
 
@@ -152,11 +152,11 @@ Ver [ADR 0011](../adr/0011-offline-ingest-and-idempotency.md) y [`../security/of
 
 **`correction`**
 
-| Acción | Evento original | Evento nuevo |
-|---|---|---|
-| `add` | No | Sí, al aplicarse |
-| `replace` | Sí | Sí, al aplicarse |
-| `void` | Sí | No |
+| Acción    | Evento original | Evento nuevo     |
+| --------- | --------------- | ---------------- |
+| `add`     | No              | Sí, al aplicarse |
+| `replace` | Sí              | Sí, al aplicarse |
+| `void`    | Sí              | No               |
 
 - Un `CHECK` exige esa combinación según la acción.
 - `reason`, `requested_by` y `status` siempre son obligatorios.
