@@ -13,3 +13,10 @@ allowBuilds:
   cpu-features: false
   protobufjs: false
   ssh2: false
+
+# Overrides de seguridad (R9): fuerzan versiones parcheadas de dependencias transitivas de desarrollo.
+# glob: GHSA-3g3m-2fjr-6pw4 (parche >=14.0.2), vía testcontainers > archiver > archiver-utils.
+# minimatch: GHSA-g3hv-75wg-m249 (parche >=11.0.1), vía eslint y typescript-eslint.
+overrides:
+  glob@>=9.0.0 <14.0.2: ^14.0.2
+  minimatch@>=7.0.0 <11.0.1: ^11.0.1
