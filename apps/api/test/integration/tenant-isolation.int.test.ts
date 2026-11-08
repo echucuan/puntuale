@@ -18,6 +18,11 @@ beforeAll(async () => {
   db = await startTestDatabase();
   a = await seedTenant(db.adminPool, 'A');
   b = await seedTenant(db.adminPool, 'B');
+  await db.adminPool.query(
+    `CREATE ROLE puntuale_rls_probe NOLOGIN NOSUPERUSER NOBYPASSRLS;
+     GRANT USAGE ON SCHEMA public TO puntuale_rls_probe;
+     GRANT SELECT, DELETE ON employee TO puntuale_rls_probe;`,
+  );
   const ingest = createIngestService(db.appPool);
   await ingest.ingest(
     { tenantId: a.tenantId, actorUserId: a.userId, request: requestMeta },
@@ -48,6 +53,24 @@ async function withRawContext<T>(
     return await work(client);
   } finally {
     await client.query('ROLLBACK');
+    client.release();
+  }
+}
+
+/** Ejecuta `work` como el rol de pruebas `puntuale_rls_probe`, con el contexto de `tenantId`. */
+async function asRlsProbe<T>(tenantId: string, work: (client: PoolClient) => Promise<T>) {
+  const client = await db.adminPool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query('SET LOCAL ROLE puntuale_rls_probe');
+    await client.query("SELECT set_config('app.tenant_id', $1, true)", [tenantId]);
+    const result = await work(client);
+    await client.query('COMMIT');
+    return result;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
     client.release();
   }
 }
@@ -105,20 +128,43 @@ describe('escritura cruzada', () => {
     expect(rows[0].display_name).toBe('Empleado B');
   });
 
-  it('DELETE de una fila de B desde A afecta 0 filas y B sigue existiendo', async () => {
+  it('el rol de aplicación no puede borrar colaboradores (solo baja lógica)', async () => {
+    await expect(
+      asTenant(a.tenantId, (client) =>
+        client.query('DELETE FROM employee WHERE id = $1', [a.employeeId]),
+      ),
+    ).rejects.toMatchObject({ code: '42501' });
+  });
+
+  it('la política RLS de DELETE aísla empresas (probada con un rol exclusivo de pruebas)', async () => {
+    // puntuale_rls_probe solo existe en este contenedor efímero, no puede iniciar sesión y
+    // no lo crea ninguna migración: sirve únicamente para ejercer la política de DELETE.
     const extra = await db.adminPool.query<{ id: string }>(
       `INSERT INTO employee (tenant_id, employee_number, display_name)
-       VALUES ($1, 'E-DEL', 'Empleado sin marcaciones') RETURNING id`,
+       VALUES ($1, 'E-DEL', 'Empleado sin historial') RETURNING id`,
       [b.tenantId],
     );
     const id = extra.rows[0]!.id;
-    const affected = await asTenant(a.tenantId, async (client) => {
+    const affected = await asRlsProbe(a.tenantId, async (client) => {
       const result = await client.query('DELETE FROM employee WHERE id = $1', [id]);
       return result.rowCount;
     });
     expect(affected).toBe(0);
     const { rowCount } = await db.adminPool.query('SELECT 1 FROM employee WHERE id = $1', [id]);
     expect(rowCount).toBe(1);
+
+    // En su propia empresa, el mismo rol sí puede: la política filtra, no bloquea todo.
+    const own = await asRlsProbe(b.tenantId, async (client) => {
+      const result = await client.query('DELETE FROM employee WHERE id = $1', [id]);
+      return result.rowCount;
+    });
+    expect(own).toBe(1);
+  });
+
+  it('un colaborador con historial no se puede borrar ni con la conexión administrativa (FK RESTRICT)', async () => {
+    await expect(
+      db.adminPool.query('DELETE FROM employee WHERE id = $1', [a.employeeId]),
+    ).rejects.toMatchObject({ code: '23001' });
   });
 
   it('INSERT con el tenant_id de B desde el contexto de A es rechazado por la RLS', async () => {

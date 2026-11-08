@@ -32,7 +32,9 @@ BEGIN
 END;
 $$;
 
--- Rechaza cualquier UPDATE, DELETE o TRUNCATE (tablas de solo inserción).
+-- Rechaza cualquier UPDATE, DELETE o TRUNCATE (tablas de solo inserción). Protege contra cambios
+-- accidentales de cualquier rol; un superusuario podría desactivar el trigger de forma deliberada,
+-- lo cual solo se permite con el procedimiento de emergencia de docs/operations/emergency-changes.md.
 CREATE FUNCTION reject_mutation() RETURNS trigger
   LANGUAGE plpgsql
 AS $$
@@ -108,7 +110,7 @@ CREATE TABLE user_tenant (
   CONSTRAINT user_tenant_tenant_id_key UNIQUE (tenant_id, id),
   CONSTRAINT user_tenant_tenant_user_key UNIQUE (tenant_id, user_id),
   CONSTRAINT user_tenant_employee_fk FOREIGN KEY (tenant_id, employee_id)
-    REFERENCES employee (tenant_id, id)
+    REFERENCES employee (tenant_id, id) ON DELETE RESTRICT
 );
 
 CREATE UNIQUE INDEX user_tenant_tenant_employee_key
@@ -147,7 +149,7 @@ CREATE TABLE attendance_event (
 
   CONSTRAINT attendance_event_tenant_id_key UNIQUE (tenant_id, id),
   CONSTRAINT attendance_event_employee_fk FOREIGN KEY (tenant_id, employee_id)
-    REFERENCES employee (tenant_id, id),
+    REFERENCES employee (tenant_id, id) ON DELETE RESTRICT,
   CONSTRAINT attendance_event_supersedes_fk FOREIGN KEY (tenant_id, supersedes_event_id)
     REFERENCES attendance_event (tenant_id, id),
 
@@ -292,8 +294,9 @@ GRANT EXECUTE ON FUNCTION app_current_tenant() TO puntuale_app;
 GRANT SELECT ON tenant TO puntuale_app;
 GRANT SELECT ON app_user TO puntuale_app;
 GRANT SELECT, INSERT, UPDATE ON user_tenant TO puntuale_app;
--- DELETE de employee: solo procede si no tiene marcaciones (la FK de attendance_event lo impide).
-GRANT SELECT, INSERT, UPDATE, DELETE ON employee TO puntuale_app;
+-- employee no admite DELETE: un colaborador se da de baja con status = 'terminated' (baja lógica).
+-- Además, las FK con ON DELETE RESTRICT impiden borrar a quien tenga marcaciones o membresía.
+GRANT SELECT, INSERT, UPDATE ON employee TO puntuale_app;
 -- Solo inserción y lectura (ADR 0004, ADR 0005).
 GRANT SELECT, INSERT ON attendance_event TO puntuale_app;
 GRANT SELECT, INSERT ON audit_event TO puntuale_app;

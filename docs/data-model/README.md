@@ -17,15 +17,15 @@ erDiagram
 
 ## Tablas
 
-| Tabla              | Tenant | RLS          | Permisos de `puntuale_app`       | Notas                                                                |
-| ------------------ | ------ | ------------ | -------------------------------- | -------------------------------------------------------------------- |
-| `tenant`           | `id`   | ENABLE+FORCE | `SELECT`                         | Una empresa (razón social), con su zona IANA                         |
-| `app_user`         | —      | No (global)  | `SELECT`                         | Identidad global; el email es `citext` único                         |
-| `user_tenant`      | Sí     | ENABLE+FORCE | `SELECT, INSERT, UPDATE`         | Membresía `active`/`revoked`; `employee_id` opcional y único         |
-| `employee`         | Sí     | ENABLE+FORCE | `SELECT, INSERT, UPDATE, DELETE` | Mínimo (E1). `DELETE` falla si tiene marcaciones (FK)                |
-| `attendance_event` | Sí     | ENABLE+FORCE | `SELECT, INSERT`                 | Solo inserción (trigger). Idempotencia por `client_event_id`         |
-| `audit_event`      | Sí     | ENABLE+FORCE | `SELECT, INSERT`                 | Solo inserción (trigger). `id` global con huecos; expone `public_id` |
-| `schema_migration` | —      | —            | Ninguno                          | Control de migraciones (solo la conexión administrativa)             |
+| Tabla              | Tenant | RLS          | Permisos de `puntuale_app` | Notas                                                                  |
+| ------------------ | ------ | ------------ | -------------------------- | ---------------------------------------------------------------------- |
+| `tenant`           | `id`   | ENABLE+FORCE | `SELECT`                   | Una empresa (razón social), con su zona IANA                           |
+| `app_user`         | —      | No (global)  | `SELECT`                   | Identidad global; el email es `citext` único                           |
+| `user_tenant`      | Sí     | ENABLE+FORCE | `SELECT, INSERT, UPDATE`   | Membresía `active`/`revoked`; `employee_id` opcional y único           |
+| `employee`         | Sí     | ENABLE+FORCE | `SELECT, INSERT, UPDATE`   | Mínimo (E1). **Sin `DELETE`**: baja lógica con `status = 'terminated'` |
+| `attendance_event` | Sí     | ENABLE+FORCE | `SELECT, INSERT`           | Solo inserción (trigger). Idempotencia por `client_event_id`           |
+| `audit_event`      | Sí     | ENABLE+FORCE | `SELECT, INSERT`           | Solo inserción (trigger). `id` global con huecos; expone `public_id`   |
+| `schema_migration` | —      | —            | Ninguno                    | Control de migraciones (solo la conexión administrativa)               |
 
 Todos los `id` son UUIDv7 generados por la base (`uuidv7()`), salvo `audit_event.id` (`bigint` identity).
 
@@ -42,6 +42,9 @@ Todos los `id` son UUIDv7 generados por la base (`uuidv7()`), salvo `audit_event
 | `clock_offset_seconds`        | `integer`     | —         | `received_at − device_sent_at`                 |
 
 ## Restricciones relevantes
+
+- **Colaboradores sin borrado físico.** `puntuale_app` no tiene `DELETE` sobre `employee`, y las FK `attendance_event_employee_fk` y `user_tenant_employee_fk` son `ON DELETE RESTRICT`: ni la conexión administrativa puede borrar a un colaborador con marcaciones o membresía.
+- **`received_at`** lo fija la base de datos (`statement_timestamp()`), nunca el dispositivo ([ADR 0010](../adr/0010-time-and-language.md)).
 
 - `attendance_event_utc_consistency`: `occurred_at_utc = (declared_local_time − offset) AT TIME ZONE 'UTC'` cuando hay hora declarada.
 - Pares obligatorios: hora local ↔ desfase; `device_sent_at` ↔ `clock_offset_seconds`; `client_event_id` ↔ `payload_hash`.

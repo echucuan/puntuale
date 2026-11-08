@@ -53,6 +53,17 @@ describe('migraciones', () => {
     expect(rows).toEqual([{ rolsuper: false, rolbypassrls: false, owned: '0' }]);
   });
 
+  it('el rol de aplicación no tiene DELETE ni TRUNCATE sobre ninguna tabla', async () => {
+    const { rows } = await db.adminPool.query<{ table: string; privilege: string }>(
+      `SELECT t.tablename AS table, p.privilege
+         FROM pg_tables t
+         CROSS JOIN (VALUES ('DELETE'), ('TRUNCATE')) AS p(privilege)
+        WHERE t.schemaname = 'public'
+          AND has_table_privilege('puntuale_app', format('public.%I', t.tablename), p.privilege)`,
+    );
+    expect(rows).toEqual([]);
+  });
+
   it('todas las tablas con tenant_id tienen RLS habilitada y forzada', async () => {
     const { rows } = await db.adminPool.query<{ relname: string }>(
       `SELECT c.relname
