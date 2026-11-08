@@ -9,7 +9,7 @@
     "node": ">=24"
   },
   "scripts": {
-    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm check:boundary",
+    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm check:boundary && pnpm check:ci-pins",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint .",
@@ -22,7 +22,8 @@
     "test:e2e": "pnpm -r --if-present test:e2e",
     "dev": "pnpm --parallel --filter @puntuale/api --filter @puntuale/web dev",
     "check:boundary": "node scripts/check-v1-boundary.mjs",
-    "build": "pnpm --filter @puntuale/web build"
+    "build": "pnpm --filter @puntuale/web build",
+    "check:ci-pins": "node scripts/check-workflow-pins.mjs"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
