@@ -5,8 +5,10 @@ import {
   type IngestResult,
 } from '@puntuale/contracts';
 import {
+  type ClockSkewAssessment,
   classifyIngest,
   computeClockOffsetSeconds,
+  detectClockSkew,
   computeEvidenceHash,
   deriveOccurredAtUtc,
   normalizeLocalTime,
@@ -17,12 +19,32 @@ import type { RequestMetadata } from '../../audit/domain/audit-entry';
 import { AuditRepository } from '../../audit/infrastructure/audit.repository';
 import { AttendanceEventRepository } from '../infrastructure/attendance-event.repository';
 
-/** Reloj del servidor, inyectable para pruebas. `received_at` es la hora confiable (ADR 0010). */
-export interface Clock {
-  now(): Date;
+/**
+ * Fuente de `received_at`: el momento en que **el servidor** recibe la marcación (ADR 0010).
+ * Nunca proviene del dispositivo: el contrato de entrada no tiene ese campo.
+ */
+export interface ServerClock {
+  now(client: PoolClient): Promise<Date>;
 }
-export const CLOCK = Symbol('CLOCK');
-export const systemClock: Clock = { now: () => new Date() };
+export const SERVER_CLOCK = Symbol('SERVER_CLOCK');
+
+/** Fuente productiva: la hora de la base de datos (`statement_timestamp()`). */
+export const databaseClock: ServerClock = {
+  async now(client) {
+    const { rows } = await client.query<{ now: Date }>('SELECT statement_timestamp() AS now');
+    const now = rows[0]?.now;
+    if (!now) throw new Error('La base no devolvió la hora del servidor.');
+    return now;
+  },
+};
+
+/**
+ * Resultado del caso de uso: el contrato `IngestResult` más la evaluación de `CLOCK_SKEW`
+ * para que la capa de dominio la use. En 1.0-a la alerta no se persiste: eso llega en 1.0-d.
+ */
+export interface IngestOutcome extends IngestResult {
+  clockSkew: ClockSkewAssessment;
+}
 
 export interface IngestContext {
   tenantId: string;
@@ -58,10 +80,10 @@ export class IngestAttendanceEventService {
     @Inject(PG_POOL) private readonly pool: Pool,
     @Inject(AttendanceEventRepository) private readonly events: AttendanceEventRepository,
     @Inject(AuditRepository) private readonly audit: AuditRepository,
-    @Inject(CLOCK) private readonly clock: Clock,
+    @Inject(SERVER_CLOCK) private readonly clock: ServerClock,
   ) {}
 
-  async ingest(context: IngestContext, rawInput: unknown): Promise<IngestResult> {
+  async ingest(context: IngestContext, rawInput: unknown): Promise<IngestOutcome> {
     const parsed = AttendanceEventInputSchema.safeParse(rawInput);
     if (!parsed.success) {
       throw new InvalidAttendanceEventError(
@@ -70,7 +92,6 @@ export class IngestAttendanceEventService {
     }
     const input = parsed.data;
     const payloadHash = computeEvidenceHash(input);
-    const receivedAt = this.clock.now();
     const deviceSentAt = new Date(input.deviceSentAt);
     const occurredAtUtc = deriveOccurredAtUtc(
       input.declaredLocalTime,
@@ -79,6 +100,7 @@ export class IngestAttendanceEventService {
     const clientEventId = input.clientEventId.toLowerCase();
 
     return withTenant(this.pool, context.tenantId, async (client) => {
+      const receivedAt = await this.clock.now(client);
       const inserted = await this.insertOrTranslate(client, {
         tenantId: context.tenantId,
         employeeId: input.employeeId.toLowerCase(),
@@ -112,7 +134,7 @@ export class IngestAttendanceEventService {
           request: context.request,
           subjectOccurredAt: occurredAtUtc,
         });
-        return { outcome: 'created', duplicate: false, event: inserted };
+        return withSkew({ outcome: 'created', duplicate: false, event: inserted });
       }
 
       const existing = await this.events.findByClientEventId(
@@ -125,7 +147,7 @@ export class IngestAttendanceEventService {
       }
       const outcome = classifyIngest(existing.payloadHash, payloadHash);
       if (outcome === 'duplicate') {
-        return { outcome, duplicate: true, event: existing };
+        return withSkew({ outcome, duplicate: true, event: existing });
       }
 
       await this.audit.record(client, {
@@ -142,7 +164,7 @@ export class IngestAttendanceEventService {
         request: context.request,
         subjectOccurredAt: occurredAtUtc,
       });
-      return { outcome: 'conflict', duplicate: false, event: existing };
+      return withSkew({ outcome: 'conflict', duplicate: false, event: existing });
     });
   }
 
@@ -163,4 +185,18 @@ export class IngestAttendanceEventService {
       throw error;
     }
   }
+}
+
+/** Evalúa `CLOCK_SKEW` con los datos guardados del evento. Nunca rechaza: solo clasifica. */
+function withSkew(result: IngestResult): IngestOutcome {
+  const { event } = result;
+  const clockSkew =
+    event.clockOffsetSeconds === null
+      ? { flagged: false, reasons: [] }
+      : detectClockSkew({
+          clockOffsetSeconds: event.clockOffsetSeconds,
+          occurredAtUtc: new Date(event.occurredAtUtc),
+          receivedAt: new Date(event.receivedAt),
+        });
+  return { ...result, clockSkew };
 }

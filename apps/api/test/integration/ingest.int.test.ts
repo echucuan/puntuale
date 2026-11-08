@@ -1,7 +1,10 @@
 import { IngestResultSchema } from '@puntuale/contracts';
 import { startTestDatabase, type TestDatabase } from '@puntuale/db/testing';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { InvalidAttendanceEventError } from '../../src/modules/time-tracking/application/ingest-attendance-event.service';
+import {
+  InvalidAttendanceEventError,
+  databaseClock,
+} from '../../src/modules/time-tracking/application/ingest-attendance-event.service';
 import { createIngestService, requestMeta, sampleInput } from '../support/attendance';
 import { seedTenant, type SeededTenant } from '../support/seed';
 
@@ -70,7 +73,7 @@ describe('ingesta idempotente', () => {
     const first = await service.ingest(ctx(), input);
     const second = await service.ingest(ctx(), input);
 
-    expect(second).toEqual({ outcome: 'duplicate', duplicate: true, event: first.event });
+    expect(second).toMatchObject({ outcome: 'duplicate', duplicate: true, event: first.event });
     const { events, audits } = await rowsFor(input.clientEventId);
     expect(events).toHaveLength(1);
     expect(audits).toHaveLength(1);
@@ -122,11 +125,49 @@ describe('ingesta idempotente', () => {
     expect(events).toHaveLength(1);
   });
 
-  it('un desfase de reloj grande no rechaza la marcación (solo se registra)', async () => {
+  it('CLOCK_SKEW: calcula y conserva el desfase, clasifica y no rechaza la marcación', async () => {
     const input = sampleInput(a.employeeId, { deviceSentAt: '2026-11-09T13:00:00.000Z' });
     const result = await createIngestService(db.appPool).ingest(ctx(), input);
     expect(result.outcome).toBe('created');
     expect(result.event.clockOffsetSeconds).toBe(3900);
+    expect(result.clockSkew).toEqual({ flagged: true, reasons: ['DEVICE_CLOCK_OFFSET'] });
+    const { events } = await rowsFor(input.clientEventId);
+    expect(events[0].clock_offset_seconds).toBe(3900);
+  });
+
+  it('CLOCK_SKEW: una marcación declarada en el futuro se clasifica, no se rechaza', async () => {
+    const input = sampleInput(a.employeeId, {
+      declaredLocalTime: '2026-11-09T08:30:00',
+      deviceSentAt: '2026-11-09T14:04:58.000Z',
+    });
+    const result = await createIngestService(db.appPool).ingest(ctx(), input);
+    expect(result.outcome).toBe('created');
+    expect(result.clockSkew).toEqual({ flagged: true, reasons: ['FUTURE_EVENT'] });
+  });
+
+  it('sin desfase relevante no se marca CLOCK_SKEW', async () => {
+    const result = await createIngestService(db.appPool).ingest(ctx(), sampleInput(a.employeeId));
+    expect(result.clockSkew).toEqual({ flagged: false, reasons: [] });
+  });
+
+  it('received_at lo fija la base de datos, no el dispositivo', async () => {
+    const service = createIngestService(db.appPool, databaseClock);
+    const before = Date.now();
+    const result = await service.ingest(ctx(), {
+      ...sampleInput(a.employeeId),
+      // Un payload malicioso que intenta fijar received_at: el contrato lo ignora.
+      receivedAt: '2000-01-01T00:00:00.000Z',
+      received_at: '2000-01-01T00:00:00.000Z',
+    });
+    const receivedAt = Date.parse(result.event.receivedAt);
+    expect(receivedAt).toBeGreaterThanOrEqual(before - 5_000);
+    expect(receivedAt).toBeLessThanOrEqual(Date.now() + 5_000);
+    const { rows } = await db.adminPool.query<{ diff: number }>(
+      `SELECT abs(extract(epoch FROM (received_at - now())))::int AS diff
+         FROM attendance_event WHERE id = $1`,
+      [result.event.id],
+    );
+    expect(rows[0]!.diff).toBeLessThan(60);
   });
 
   it('respeta el desfase declarado en zonas con horario de verano', async () => {

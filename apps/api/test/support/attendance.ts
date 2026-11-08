@@ -3,16 +3,16 @@ import { generateUuidV7 } from '@puntuale/domain-rules';
 import type { Pool } from 'pg';
 import { AuditRepository } from '../../src/modules/audit/infrastructure/audit.repository';
 import {
-  type Clock,
   IngestAttendanceEventService,
+  type ServerClock,
 } from '../../src/modules/time-tracking/application/ingest-attendance-event.service';
 import { AttendanceEventRepository } from '../../src/modules/time-tracking/infrastructure/attendance-event.repository';
 
-/** Reloj fijo: hace deterministas `received_at` y el desfase. */
+/** Reloj fijo **solo para pruebas**: hace deterministas `received_at` y el desfase. */
 export const FIXED_NOW = new Date('2026-11-09T14:05:00.000Z');
-export const fixedClock: Clock = { now: () => FIXED_NOW };
+export const fixedClock: ServerClock = { now: () => Promise.resolve(FIXED_NOW) };
 
-export function createIngestService(appPool: Pool, clock: Clock = fixedClock) {
+export function createIngestService(appPool: Pool, clock: ServerClock = fixedClock) {
   return new IngestAttendanceEventService(
     appPool,
     new AttendanceEventRepository(),

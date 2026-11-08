@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
 import { AuditModule } from '../audit/audit.module';
 import {
-  CLOCK,
   IngestAttendanceEventService,
-  systemClock,
+  SERVER_CLOCK,
+  databaseClock,
 } from './application/ingest-attendance-event.service';
 import { AttendanceEventRepository } from './infrastructure/attendance-event.repository';
 
@@ -13,7 +13,8 @@ import { AttendanceEventRepository } from './infrastructure/attendance-event.rep
   providers: [
     AttendanceEventRepository,
     IngestAttendanceEventService,
-    { provide: CLOCK, useValue: systemClock },
+    // received_at siempre viene de la base. Solo las pruebas construyen el servicio con otro reloj.
+    { provide: SERVER_CLOCK, useValue: databaseClock },
   ],
   exports: [IngestAttendanceEventService],
 })
