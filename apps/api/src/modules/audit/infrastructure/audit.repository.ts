@@ -1,16 +1,22 @@
 import { Injectable } from '@nestjs/common';
 import type { PoolClient } from 'pg';
+import { projectAuditData } from '../domain/audit-data-policy';
 import { assertValidAuditAction, type AuditEntry, type RecordedAudit } from '../domain/audit-entry';
 
 /**
  * Escribe la auditoría con **el mismo cliente** (y por lo tanto la misma transacción) que el cambio.
  * Si la transacción se revierte, la auditoría también (ADR 0005). Solo inserta: la tabla no admite
  * `UPDATE` ni `DELETE`.
+ *
+ * `before` y `after` se proyectan a la lista permitida de su tipo de entidad
+ * (`audit-data-policy.ts`): nunca se guardan secretos ni campos no listados.
  */
 @Injectable()
 export class AuditRepository {
   async record(client: PoolClient, entry: AuditEntry): Promise<RecordedAudit> {
     assertValidAuditAction(entry.action);
+    const before = projectAuditData(entry.entityType, entry.before);
+    const after = projectAuditData(entry.entityType, entry.after);
     const { rows } = await client.query<{ id: string; publicId: string; recordedAt: Date }>(
       `INSERT INTO audit_event (
          tenant_id, actor_type, actor_user_id, channel, action, entity_type, entity_id,
@@ -25,8 +31,8 @@ export class AuditRepository {
         entry.action,
         entry.entityType,
         entry.entityId,
-        toJson(entry.before),
-        toJson(entry.after),
+        toJson(before),
+        toJson(after),
         entry.reason,
         entry.request.ip,
         entry.request.userAgent,

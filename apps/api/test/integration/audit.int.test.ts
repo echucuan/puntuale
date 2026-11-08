@@ -36,7 +36,7 @@ function entry(action: string, entityId: string | null) {
     entityType: 'employee',
     entityId,
     before: null,
-    after: { employee_number: 'E-RB' },
+    after: { employeeNumber: 'E-RB', password: 'nunca-debe-guardarse' },
     reason: null,
     request: { ip: '198.51.100.7', userAgent: 'vitest', requestId: 'req-audit' },
     subjectOccurredAt: null,
@@ -76,6 +76,12 @@ describe('auditoría transaccional', () => {
       return audit.record(client, entry(action, rows[0]!.id));
     });
     expect(await auditCount(action)).toBe(1);
+    const { rows } = await db.adminPool.query(
+      'SELECT after_data FROM audit_event WHERE action = $1',
+      [action],
+    );
+    // La lista permitida descarta los campos no listados, en especial los secretos.
+    expect(rows[0].after_data).toEqual({ employeeNumber: 'E-RB' });
     expect(recorded.publicId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-7/);
     expect(recorded.id).toMatch(/^\d+$/);
   });

@@ -26,6 +26,7 @@ Registrar quién cambió qué, cuándo, desde dónde y por qué, **en la misma t
 2. **Inmutable.** El rol de aplicación no puede modificar ni borrar (`immutability.int.test.ts`).
 3. **`id` es global y puede tener huecos.** No es por tenant ni es el único criterio de orden; se expone `public_id` y se ordena también por `recorded_at`.
 4. En eventos sincronizados sin conexión, `request_ip` es la IP de la sincronización y `subject_occurred_at` guarda el momento declarado.
+5. **Lista permitida.** `before` y `after` se proyectan a los campos de `AUDITABLE_FIELDS` de su entidad (`domain/audit-data-policy.ts`). Una entidad sin lista no se audita con datos. Nunca se guardan contraseñas, secretos MFA, tokens, cookies, credenciales ni datos personales innecesarios; la lista se valida al cargar el módulo.
 
 ## Entradas y salidas
 
@@ -40,6 +41,7 @@ Registrar quién cambió qué, cuándo, desde dónde y por qué, **en la misma t
 | Archivo                                     | Qué verifica                                    |
 | ------------------------------------------- | ----------------------------------------------- |
 | `domain/audit-entry.test.ts`                | Forma de la acción                              |
+| `domain/audit-data-policy.test.ts`          | Lista permitida y rechazo de campos sensibles   |
 | `test/integration/audit.int.test.ts`        | Reversión conjunta con la transacción principal |
 | `test/integration/immutability.int.test.ts` | `UPDATE`, `DELETE` y `TRUNCATE` rechazados      |
 
@@ -47,4 +49,4 @@ Registrar quién cambió qué, cuándo, desde dónde y por qué, **en la misma t
 
 1. En el servicio que modifica datos, llama a `audit.record(client, ...)` con el **mismo** `client` de `withTenant`.
 2. Nombra la acción `<modulo>.<entidad>.<verbo-en-pasado>` y regístrala en la tabla de acciones de `docs/business-rules/audit.md`.
-3. No guardes en `before`/`after` secretos ni datos que no se necesiten para reconstruir el cambio.
+3. Si auditas una entidad nueva, agrega su lista en `AUDITABLE_FIELDS`, solo con los campos necesarios para reconstruir el cambio. Nunca secretos.
