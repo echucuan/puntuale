@@ -2,3 +2,14 @@ packages:
   - apps/*
   - packages/*
   - db
+minimumReleaseAgeExclude:
+  - supertest@7.3.2
+
+# Scripts de instalación de dependencias: denegados explícitamente.
+# esbuild trae su binario como dependencia opcional; los demás son dependencias
+# transitivas de Testcontainers (ssh2, cpu-features, protobufjs) que no necesitan compilar.
+allowBuilds:
+  esbuild: false
+  cpu-features: false
+  protobufjs: false
+  ssh2: false
