@@ -8,7 +8,8 @@ import { startTestDatabase, type TestDatabase } from '@puntuale/db/testing';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createApp } from '../../src/create-app';
-import { TEST_SESSION_HEADER } from '../../src/modules/tenancy/infrastructure/test-session.resolver';
+import { createTestApp } from '../support/create-test-app';
+import { TEST_SESSION_HEADER } from '../support/test-session.resolver';
 import { seedTenant, type SeededTenant } from '../support/seed';
 
 let db: TestDatabase;
@@ -20,7 +21,7 @@ beforeAll(async () => {
   db = await startTestDatabase();
   a = await seedTenant(db.adminPool, 'A');
   b = await seedTenant(db.adminPool, 'B');
-  app = await createApp({ nodeEnv: 'test', port: 0, databaseUrl: db.appUrl });
+  app = await createTestApp({ nodeEnv: 'test', port: 0, databaseUrl: db.appUrl });
   await app.init();
 });
 
@@ -85,5 +86,21 @@ describe('GET /api/t/:tenantId/context (TenantGuard)', () => {
       .get(`/api/t/${c.tenantId}/context`)
       .set(TEST_SESSION_HEADER, c.userId)
       .expect(404);
+  });
+});
+
+describe('composición productiva (createApp)', () => {
+  it('ignora el encabezado de pruebas y responde 401 aunque NODE_ENV sea test', async () => {
+    const production = await createApp({ nodeEnv: 'test', port: 0, databaseUrl: db.appUrl });
+    await production.init();
+    try {
+      const response = await request(production.getHttpServer())
+        .get(`/api/t/${a.tenantId}/context`)
+        .set(TEST_SESSION_HEADER, a.userId)
+        .expect(401);
+      expect(ApiErrorSchema.parse(response.body).error.code).toBe('unauthenticated');
+    } finally {
+      await production.close();
+    }
   });
 });

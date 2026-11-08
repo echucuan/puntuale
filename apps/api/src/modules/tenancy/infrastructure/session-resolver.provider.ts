@@ -1,18 +1,15 @@
 import type { Provider } from '@nestjs/common';
-import { APP_CONFIG, type AppConfig } from '../../../config/app-config';
-import { SESSION_RESOLVER, type SessionResolver } from '../domain/session';
+import { SESSION_RESOLVER } from '../domain/session';
 import { NoSessionResolver } from './no-session.resolver';
-import { TestSessionResolver } from './test-session.resolver';
 
-/** Elige el resolvedor de sesión: el de pruebas solo con `NODE_ENV=test`; en cualquier otro caso, ninguno. */
-export function createSessionResolver(config: AppConfig): SessionResolver {
-  return config.nodeEnv === 'test'
-    ? new TestSessionResolver(config.nodeEnv)
-    : new NoSessionResolver();
-}
-
+/**
+ * Resolvedor de sesión del módulo productivo: **siempre** `NoSessionResolver` (toda ruta de empresa
+ * responde 401 hasta 1.0-b). No depende de ninguna variable de entorno ni hay atajo de desarrollo.
+ *
+ * El adaptador de pruebas no existe en `src/`: vive en la carpeta de soporte de pruebas y solo se registra con una
+ * composición explícita de pruebas que sobrescribe este proveedor (ADR 0007).
+ */
 export const sessionResolverProvider: Provider = {
   provide: SESSION_RESOLVER,
-  inject: [APP_CONFIG],
-  useFactory: createSessionResolver,
+  useClass: NoSessionResolver,
 };
