@@ -68,3 +68,4 @@ Cada documento declara su estado al inicio:
 | [0011](adr/0011-offline-ingest-and-idempotency.md)              | Ingesta sin conexión e idempotencia                              | Aceptado                      |
 | [0012](adr/0012-attendance-status-and-precedence.md)            | Cuatro estados y su precedencia                                  | Aceptado                      |
 | [0013](adr/0013-postgresql-18.md)                               | PostgreSQL 18 como versión oficial (mínima, desarrollo, CI)      | Aceptado                      |
+| [0014](adr/0014-postgres-sessions-and-login.md)                 | Sesiones en PostgreSQL y acceso controlado a la identidad        | Aceptado                      |
