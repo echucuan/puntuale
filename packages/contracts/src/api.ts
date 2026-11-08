@@ -22,6 +22,10 @@ export const API_ERROR_CODES = [
   'validation_failed',
   'conflict',
   'internal_error',
+  'invalid_credentials',
+  'forbidden',
+  'rate_limited',
+  'payload_too_large',
 ] as const;
 export type ApiErrorCode = (typeof API_ERROR_CODES)[number];
 
