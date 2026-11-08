@@ -29,6 +29,8 @@ Todos los cambios relevantes del proyecto se registran aquí. El formato se basa
   - módulo `audit`: auditoría en la misma transacción;
   - módulo `time-tracking`: ingesta idempotente `created`/`duplicate`/`conflict`, sin endpoint;
   - errores con la forma `ApiError`.
+- `@puntuale/ui`: tokens de marca tomados de la landing (sin fuentes externas).
+- `@puntuale/web` (React 19 + Vite 8): pantalla base con la marca y el estado de la API.
 - Pruebas de integración de aislamiento, inmutabilidad, auditoría e ingesta, y pruebas e2e del guard.
 - Reglas de negocio documentadas en `docs/business-rules/` (aislamiento, inmutabilidad y auditoría).
 - Infraestructura local: `infra/docker-compose.yml` (PostgreSQL 18), `.env.example` con valores ficticios y los comandos `db:up`, `db:down`, `db:migrate` y `test:integration`.
