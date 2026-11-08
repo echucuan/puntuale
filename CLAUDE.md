@@ -11,6 +11,24 @@ Este archivo resume las reglas permanentes del proyecto. Se aplica a cualquier p
 
 Se trabaja una funcionalidad a la vez. Cada paso entrega un objetivo, criterios de aceptación, código con pruebas, una revisión y la aceptación del propietario.
 
+## Flujo de cada subversión funcional
+
+Aplica a toda subversión funcional (1.0-b en adelante). El propietario la prueba en local **antes** de cualquier commit o push.
+
+1. **Rama propia.** Cada subversión se trabaja en su propia rama local (por ejemplo, `feat/1.0-b-identity-access`), creada desde `main` actualizado.
+2. **Sin commit hasta probarla.** El trabajo queda sin commit hasta que el propietario lo haya probado en local.
+3. **Pruebas.** Deben pasar `pnpm check`, `pnpm test:integration` y `pnpm test:e2e`.
+4. **Arranque local.** Se levanta con `pnpm db:up` y después `pnpm dev`.
+5. **Entrega para probar:**
+   - URLs locales. Valores esperados: web `http://localhost:5173`, API `http://localhost:3000` y PostgreSQL en `localhost:5432`. Son los valores esperados de la configuración del repositorio; si la configuración local los cambia (`.env`, puertos ocupados), **siempre se reportan los puertos reales**.
+   - Datos ficticios: usuarios, empresas y contraseñas de prueba de la semilla. Nunca datos reales.
+   - Guía de prueba paso a paso, con lo que funciona y lo que queda pendiente.
+6. **Aprobación.** Se espera la aprobación explícita del propietario.
+7. **Commit.** Se crea el commit únicamente después de esa aprobación.
+8. **Push.** Se solicita una autorización separada para hacer push.
+9. **Publicación.** Se publica solo la rama de la funcionalidad.
+10. **Nunca** se hace push directo a `main` ni se usa `--force`.
+
 ## Reglas que no se negocian
 
 1. **Separación V1/V2.** La V1 no maneja dinero. No se crean módulos, tablas, endpoints ni lógica de nómina en el código ejecutable. Ver `docs/versions/`.
