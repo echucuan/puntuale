@@ -1,0 +1,23 @@
+# Servicios locales de desarrollo. Ningún servicio productivo externo.
+# Las contraseñas por defecto son ficticias y solo sirven en desarrollo local.
+name: puntuale
+
+services:
+  db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: puntuale
+      POSTGRES_USER: puntuale_admin
+      POSTGRES_PASSWORD: ${PUNTUALE_DB_ADMIN_PASSWORD:-puntuale_admin_dev_only}
+    ports:
+      - '${PUNTUALE_DB_PORT:-5432}:5432'
+    volumes:
+      - puntuale-db:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U puntuale_admin -d puntuale']
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  puntuale-db:

@@ -14,7 +14,11 @@
     "format:check": "prettier --check .",
     "lint": "eslint .",
     "typecheck": "pnpm -r --if-present typecheck",
-    "test": "pnpm -r --if-present test"
+    "test": "pnpm -r --if-present test",
+    "db:up": "docker compose -f infra/docker-compose.yml --env-file .env up -d --wait db",
+    "db:down": "docker compose -f infra/docker-compose.yml down",
+    "db:migrate": "pnpm --filter @puntuale/db migrate",
+    "test:integration": "pnpm -r --if-present test:integration"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

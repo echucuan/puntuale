@@ -20,3 +20,5 @@ Todos los cambios relevantes del proyecto se registran aquí. El formato se basa
 - Guía de incorporación (`docs/development/onboarding.md`).
 - `@puntuale/contracts`: enumeraciones (cuatro estados de asistencia con etiquetas en español), validación de tiempo (IANA, hora local, instante), contrato de marcación que separa evidencia y transporte, y contratos HTTP base.
 - `@puntuale/domain-rules`: JSON canónico (RFC 8785) y SHA-256, UUIDv7, ingesta idempotente y detección de `CLOCK_SKEW`, precedencia de estados, identidad estable de la jornada y alertas sin duplicados.
+- `@puntuale/db`: migración `0001_base_multitenant` (`tenant`, `app_user`, `user_tenant`, `employee` mínimo, `attendance_event`, `audit_event`), `app_current_tenant()` que falla cerrada, RLS `ENABLE` + `FORCE`, triggers de solo inserción y de `tenant_id` inmutable, permisos mínimos de `puntuale_app`; ejecutor de migraciones con checksum y `startTestDatabase()` con Testcontainers.
+- Infraestructura local: `infra/docker-compose.yml` (PostgreSQL 18), `.env.example` con valores ficticios y los comandos `db:up`, `db:down`, `db:migrate` y `test:integration`.
