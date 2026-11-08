@@ -98,6 +98,21 @@ describe('auditoría transaccional', () => {
     ).rejects.toMatchObject({ code: '42501' });
   });
 
+  it('una entidad sin lista de campos no se puede auditar con datos completos', async () => {
+    const action = 'test_support.app_user.updated';
+    await expect(
+      withTenant(db.appPool, a.tenantId, (client) =>
+        audit.record(client, {
+          ...entry(action, a.userId),
+          entityType: 'app_user',
+          before: { id: a.userId, email: 'persona@example.test', passwordHash: 'x' },
+          after: { id: a.userId, email: 'nuevo@example.test', passwordHash: 'y' },
+        }),
+      ),
+    ).rejects.toThrow(/sin lista de auditoría/);
+    expect(await auditCount(action)).toBe(0);
+  });
+
   it('rechaza una acción mal formada antes de llegar a la base', async () => {
     await expect(
       withTenant(db.appPool, a.tenantId, (client) => audit.record(client, entry('creado', null))),
