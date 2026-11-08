@@ -52,6 +52,13 @@ describe('workdayNaturalKey: identidad estable (ajuste 2.2)', () => {
     expect(workdayNaturalKey(unscheduled)).not.toBe(workdayNaturalKey(scheduled));
   });
 
+  it('la llave no acepta eventos ni ordinales de llegada como entrada', () => {
+    // @ts-expect-error: la identidad no depende de los eventos.
+    workdayNaturalKey({ ...scheduled, events: [] });
+    // @ts-expect-error: tampoco del orden en que llegan.
+    workdayNaturalKey({ ...scheduled, arrivalOrdinal: 3 });
+  });
+
   it('no distingue mayúsculas en los UUID', () => {
     expect(workdayNaturalKey({ ...scheduled, tenantId: scheduled.tenantId.toUpperCase() })).toBe(
       workdayNaturalKey(scheduled),
