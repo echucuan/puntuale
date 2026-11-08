@@ -1,15 +1,31 @@
 # Puntuale
 
-Landing de Puntuale con identidad visual de la marca, diseño adaptable y demostración de asistencia ficticia. HTML, CSS y JavaScript sin compilación ni backend.
+**Plataforma de control de asistencia para empresas en México.** Registra entradas y salidas, organiza las jornadas, permite revisarlas, aclararlas y corregirlas con historial, y cierra cada periodo con un reporte de asistencia e incidencias. Con ese reporte, cada empresa prepara su nómina en su propio sistema.
 
-## Vista local
+> **Estado:** en construcción, paso **1.0-a** (base del monorepo). Todavía no hay funcionalidad de negocio utilizable. El avance por módulo está en [`docs/README.md`](docs/README.md).
 
-Abre `index.html` en un navegador o sirve esta carpeta con un servidor HTTP estático.
+## Versiones
 
-## GitHub Pages
+| Versión | Alcance |
+|---|---|
+| **V1.x** | Control de asistencia: empresas, usuarios, colaboradores, horarios, marcaciones, jornadas, incidencias, correcciones auditadas, cierres de periodo y reportes. **No maneja dinero.** |
+| **V2.x** | Nómina como módulo separado. Consumirá el cierre de periodo versionado de la V1 sin modificarlo. |
 
-Repositorio previsto: `echucuan/puntuale`. En Settings → Pages selecciona **GitHub Actions** como origen. El workflow incluido publica al subir cambios a `main`.
+Más detalle en [`docs/versions/v1-scope.md`](docs/versions/v1-scope.md) y [`docs/versions/v2-boundary.md`](docs/versions/v2-boundary.md).
 
-URL prevista después de una publicación exitosa: https://echucuan.github.io/puntuale/
+## Contenido del repositorio
 
-La demo no guarda datos ni representa una plataforma productiva. No se incluyen métricas comerciales, testimonios o promesas de cumplimiento legal.
+| Ruta | Contenido |
+|---|---|
+| `index.html`, `styles.css`, `script.js`, `assets/` | **Landing pública**, publicada en <https://echucuan.github.io/puntuale/>. Es una demostración ilustrativa, no una aplicación productiva. Ver [`docs/landing.md`](docs/landing.md). |
+| `docs/` | Arquitectura, decisiones (ADRs), alcance de cada versión y referencias. |
+
+## Documentación
+
+- [Índice de la documentación](docs/README.md)
+- [Decisiones de arquitectura (ADRs)](docs/adr/)
+- [Convenciones](docs/architecture/conventions.md)
+
+## Licencia
+
+**Pendiente.** Ver [ADR 0008](docs/adr/0008-public-repo-landing-at-root-license-pending.md). Mientras no haya un archivo `LICENSE`, no se otorga ningún permiso de uso, copia o redistribución del código.
