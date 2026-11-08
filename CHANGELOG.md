@@ -10,6 +10,7 @@ Todos los cambios relevantes del proyecto se registran aquí. El formato se basa
 - Migración `0002_sessions_security`: `app_user_credential`, `auth_session`, `security_event` (solo inserción), `login_failure`, `rate_limit_bucket`, el rol `puntuale_auth_definer` y las funciones `SECURITY DEFINER` `auth_*`.
 - Módulo `identity`: login, logout, sesión actual, listado y revocación de sesiones propias, rotación, Argon2id, CSRF, límites de tasa y eventos de seguridad.
 - Helmet, CORS con lista explícita y un identificador por petición (`X-Request-Id`).
+- Pantalla web de acceso, sesiones activas, revocación y rotación.
 - `pnpm db:seed` con cuentas ficticias de desarrollo.
 - Un cuerpo JSON mayor a 100 KB responde 413 `payload_too_large` con el formato estándar de error.
 
@@ -18,6 +19,10 @@ Todos los cambios relevantes del proyecto se registran aquí. El formato se basa
 - `puntuale_app` ya no tiene `SELECT` sobre `app_user` (R5).
 - `CookieSessionResolver` reemplaza a `NoSessionResolver`: las rutas de empresa aceptan una sesión real.
 - La configuración exige `AUTH_SECRET` y `CORS_ORIGINS`.
+
+### Pendiente
+
+- Mejora menor, no bloquea esta entrega: que la web muestre un mensaje específico para `payload_too_large`.
 
 ## [Sin publicar] · 1.0-a Base del monorepo
 

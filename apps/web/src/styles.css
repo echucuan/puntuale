@@ -68,3 +68,126 @@ body {
 .pt-status--unreachable {
   color: #a4372d;
 }
+
+.pt-card + .pt-card {
+  margin-top: 16px;
+}
+
+.pt-card h2 {
+  margin: 0 0 12px;
+  color: var(--pt-navy);
+  font-size: 1.05rem;
+}
+
+.pt-card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.pt-form {
+  display: grid;
+  gap: 12px;
+  max-width: 360px;
+}
+
+.pt-form label {
+  display: grid;
+  gap: 4px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.pt-form input {
+  padding: 8px 10px;
+  border: 1px solid var(--pt-line);
+  border-radius: 8px;
+  font: inherit;
+}
+
+.pt-button {
+  justify-self: start;
+  padding: 8px 16px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--pt-navy);
+  color: var(--pt-white);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pt-button:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.pt-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--pt-blue);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pt-error {
+  margin: 0;
+  color: #a4372d;
+}
+
+.pt-notice,
+.pt-hint {
+  margin: 0 0 12px;
+  color: var(--pt-muted);
+}
+
+.pt-facts {
+  display: grid;
+  grid-template-columns: minmax(0, 180px) minmax(0, 1fr);
+  gap: 6px 12px;
+  margin: 0 0 16px;
+}
+
+.pt-facts dt {
+  color: var(--pt-muted);
+}
+
+.pt-facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.pt-sessions {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pt-sessions li {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--pt-line);
+}
+
+.pt-sessions li > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.pt-sessions code,
+.pt-sessions small {
+  overflow-wrap: anywhere;
+}
+
+.pt-sessions small {
+  color: var(--pt-muted);
+}
