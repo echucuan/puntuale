@@ -33,4 +33,7 @@ Todos los cambios relevantes del proyecto se registran aquí. El formato se basa
 - `@puntuale/web` (React 19 + Vite 8): pantalla base con la marca y el estado de la API.
 - Pruebas de integración de aislamiento, inmutabilidad, auditoría e ingesta, y pruebas e2e del guard.
 - Reglas de negocio documentadas en `docs/business-rules/` (aislamiento, inmutabilidad y auditoría).
+- CI (GitHub Actions): `pnpm check` y `pnpm build` sin Docker; integración y e2e con Testcontainers; búsqueda de secretos con gitleaks.
+- `pnpm check:boundary` (incluido en `pnpm check`): falla si el código ejecutable contiene términos de nómina.
+- Documentación: visión general de la arquitectura, contratos de la API, controles de seguridad, operación local, y guía de incorporación con todos los comandos.
 - Infraestructura local: `infra/docker-compose.yml` (PostgreSQL 18), `.env.example` con valores ficticios y los comandos `db:up`, `db:down`, `db:migrate` y `test:integration`.

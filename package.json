@@ -9,18 +9,20 @@
     "node": ">=24"
   },
   "scripts": {
-    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test",
+    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm check:boundary",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint .",
     "typecheck": "pnpm -r --if-present typecheck",
     "test": "pnpm -r --if-present test",
-    "db:up": "docker compose -f infra/docker-compose.yml --env-file .env up -d --wait db",
-    "db:down": "docker compose -f infra/docker-compose.yml down",
+    "db:up": "docker compose --project-directory . -f infra/docker-compose.yml up -d --wait db",
+    "db:down": "docker compose --project-directory . -f infra/docker-compose.yml down",
     "db:migrate": "pnpm --filter @puntuale/db migrate",
     "test:integration": "pnpm -r --if-present test:integration",
     "test:e2e": "pnpm -r --if-present test:e2e",
-    "dev": "pnpm --filter @puntuale/api dev"
+    "dev": "pnpm --parallel --filter @puntuale/api --filter @puntuale/web dev",
+    "check:boundary": "node scripts/check-v1-boundary.mjs",
+    "build": "pnpm --filter @puntuale/web build"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
