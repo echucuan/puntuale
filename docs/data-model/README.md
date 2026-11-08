@@ -43,7 +43,13 @@ Todos los `id` son UUIDv7 generados por la base (`uuidv7()`), salvo `audit_event
 
 ## Restricciones relevantes
 
-- **Colaboradores sin borrado físico.** `puntuale_app` no tiene `DELETE` sobre `employee`, y las FK `attendance_event_employee_fk` y `user_tenant_employee_fk` son `ON DELETE RESTRICT`: ni la conexión administrativa puede borrar a un colaborador con marcaciones o membresía.
+- **Colaboradores sin borrado físico.** Un colaborador se da de baja con `status = 'terminated'` y sigue consultable como histórico, con sus marcaciones y su membresía. Tres barreras:
+  - `puntuale_app` no tiene `DELETE` ni `TRUNCATE` sobre `employee`;
+  - los triggers `employee_reject_delete` y `employee_reject_truncate` rechazan el borrado de cualquier rol en el flujo normal, incluida la conexión administrativa ordinaria y aunque el colaborador no tenga referencias;
+  - las FK `attendance_event_employee_fk` y `user_tenant_employee_fk` son `ON DELETE RESTRICT`.
+
+  Un bypass deliberado de un superusuario solo se admite con el [procedimiento de emergencia](../operations/emergency-changes.md).
+
 - **`received_at`** lo fija la base de datos (`statement_timestamp()`), nunca el dispositivo ([ADR 0010](../adr/0010-time-and-language.md)).
 
 - `attendance_event_utc_consistency`: `occurred_at_utc = (declared_local_time − offset) AT TIME ZONE 'UTC'` cuando hay hora declarada.
@@ -56,8 +62,9 @@ Todos los `id` son UUIDv7 generados por la base (`uuidv7()`), salvo `audit_event
 
 ## Funciones y triggers
 
-| Nombre                   | Tipo    | Efecto                                                              |
-| ------------------------ | ------- | ------------------------------------------------------------------- |
-| `app_current_tenant()`   | Función | Lee `app.tenant_id`; `NULL` si falta o no es UUID (falla cerrada)   |
-| `reject_mutation()`      | Trigger | Rechaza `UPDATE`, `DELETE` y `TRUNCATE` en tablas de solo inserción |
-| `reject_tenant_change()` | Trigger | Rechaza cambiar `tenant_id` en `employee` y `user_tenant`           |
+| Nombre                     | Tipo    | Efecto                                                              |
+| -------------------------- | ------- | ------------------------------------------------------------------- |
+| `app_current_tenant()`     | Función | Lee `app.tenant_id`; `NULL` si falta o no es UUID (falla cerrada)   |
+| `reject_mutation()`        | Trigger | Rechaza `UPDATE`, `DELETE` y `TRUNCATE` en tablas de solo inserción |
+| `reject_tenant_change()`   | Trigger | Rechaza cambiar `tenant_id` en `employee` y `user_tenant`           |
+| `reject_employee_delete()` | Trigger | Rechaza `DELETE` y `TRUNCATE` en `employee` (baja lógica)           |

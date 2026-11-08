@@ -13,7 +13,9 @@
 
 3. Una corrección crea un evento nuevo con `source = 'correction'` y, si reemplaza a otro, `supersedes_event_id`. La marcación vigente se calcula; nunca se marca la original. (El flujo de correcciones llega en 1.0-e.)
 4. Una marcación sincronizada dos veces no se duplica: la idempotencia por `client_event_id` está en [ADR 0011](../adr/0011-offline-ingest-and-idempotency.md).
+5. **Los colaboradores no se borran físicamente** durante la operación normal: se dan de baja con `status = 'terminated'` y permanecen consultables como histórico, con sus marcaciones, su membresía y la identidad del usuario intactas. El rol de aplicación no tiene `DELETE` ni `TRUNCATE`, y el trigger `reject_employee_delete()` rechaza el borrado de cualquier rol, incluida la conexión administrativa ordinaria. Mismo alcance de la garantía que en el punto 2.
 
 ## Pruebas
 
-`apps/api/test/integration/immutability.int.test.ts` cubre cada operación en las dos tablas, con el rol de aplicación y con la conexión administrativa.
+- `apps/api/test/integration/immutability.int.test.ts` cubre cada operación en las dos tablas, con el rol de aplicación y con la conexión administrativa.
+- `apps/api/test/integration/employee-deletion.int.test.ts` cubre el borrado y el vaciado de `employee` con ambos roles (con y sin referencias) y la baja lógica como histórico.

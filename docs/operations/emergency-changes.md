@@ -4,11 +4,11 @@
 
 ## Qué protege el sistema y qué no
 
-| Actor                                      | ¿Puede modificar o borrar `attendance_event` / `audit_event`? |
-| ------------------------------------------ | ------------------------------------------------------------- |
-| Rol de aplicación (`puntuale_app`)         | No: sin permisos (`42501`) y con trigger                      |
-| Conexión administrativa en el flujo normal | No: el trigger `reject_mutation()` lo rechaza                 |
-| Superusuario que actúa a propósito         | **Sí, técnicamente**: puede desactivar triggers o permisos    |
+| Actor                                      | ¿Puede modificar o borrar `attendance_event` / `audit_event`, o borrar un `employee`? |
+| ------------------------------------------ | ------------------------------------------------------------------------------------- |
+| Rol de aplicación (`puntuale_app`)         | No: sin permisos (`42501`) y con trigger                                              |
+| Conexión administrativa en el flujo normal | No: los triggers `reject_mutation()` y `reject_employee_delete()` lo rechazan         |
+| Superusuario que actúa a propósito         | **Sí, técnicamente**: puede desactivar triggers o permisos                            |
 
 El trigger evita errores; no impide un bypass deliberado de un superusuario. Por eso un bypass se trata como un procedimiento excepcional y documentado.
 

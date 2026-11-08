@@ -44,6 +44,18 @@ BEGIN
 END;
 $$;
 
+-- Rechaza el borrado físico de colaboradores: se dan de baja con status = 'terminated'.
+-- Igual que reject_mutation(), protege contra borrados accidentales de cualquier rol; un bypass
+-- deliberado de un superusuario solo se admite con docs/operations/emergency-changes.md.
+CREATE FUNCTION reject_employee_delete() RETURNS trigger
+  LANGUAGE plpgsql
+AS $$
+BEGIN
+  RAISE EXCEPTION 'employee no admite borrado físico (operación % rechazada); usa la baja lógica con status = ''terminated''', TG_OP
+    USING ERRCODE = 'restrict_violation';
+END;
+$$;
+
 -- Impide cambiar el tenant_id de una fila existente.
 CREATE FUNCTION reject_tenant_change() RETURNS trigger
   LANGUAGE plpgsql
@@ -249,6 +261,17 @@ CREATE TRIGGER user_tenant_reject_tenant_change
   FOR EACH ROW EXECUTE FUNCTION reject_tenant_change();
 
 -- ---------------------------------------------------------------------------
+-- employee: sin borrado físico (baja lógica)
+-- ---------------------------------------------------------------------------
+
+CREATE TRIGGER employee_reject_delete
+  BEFORE DELETE ON employee
+  FOR EACH ROW EXECUTE FUNCTION reject_employee_delete();
+CREATE TRIGGER employee_reject_truncate
+  BEFORE TRUNCATE ON employee
+  FOR EACH STATEMENT EXECUTE FUNCTION reject_employee_delete();
+
+-- ---------------------------------------------------------------------------
 -- Row Level Security: ENABLE + FORCE, una política por tabla (<tabla>_tenant_isolation)
 -- ---------------------------------------------------------------------------
 
@@ -295,7 +318,8 @@ GRANT SELECT ON tenant TO puntuale_app;
 GRANT SELECT ON app_user TO puntuale_app;
 GRANT SELECT, INSERT, UPDATE ON user_tenant TO puntuale_app;
 -- employee no admite DELETE: un colaborador se da de baja con status = 'terminated' (baja lógica).
--- Además, las FK con ON DELETE RESTRICT impiden borrar a quien tenga marcaciones o membresía.
+-- Además, el trigger employee_reject_delete rechaza el borrado de cualquier rol, y las FK con
+-- ON DELETE RESTRICT impiden borrar a quien tenga marcaciones o membresía.
 GRANT SELECT, INSERT, UPDATE ON employee TO puntuale_app;
 -- Solo inserción y lectura (ADR 0004, ADR 0005).
 GRANT SELECT, INSERT ON attendance_event TO puntuale_app;

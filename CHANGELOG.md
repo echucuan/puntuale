@@ -40,7 +40,7 @@ Todos los cambios relevantes del proyecto se registran aquí. El formato se basa
 
 ### Cambiado (revisión arquitectónica de 1.0-a)
 
-- `puntuale_app` ya no tiene `DELETE` sobre `employee`: los colaboradores solo se dan de baja lógica (`status`). Las FK hacia `employee` son `ON DELETE RESTRICT`. La política RLS de `DELETE` se prueba con un rol exclusivo de pruebas (`puntuale_rls_probe`) que no crea ninguna migración. La migración `0001` se ajustó en sitio porque nunca se publicó ni se aplicó fuera de bases efímeras o locales.
+- `puntuale_app` ya no tiene `DELETE` sobre `employee`: los colaboradores solo se dan de baja lógica (`status`). Los triggers `employee_reject_delete` y `employee_reject_truncate` rechazan el borrado físico de cualquier rol en el flujo normal, y las FK hacia `employee` son `ON DELETE RESTRICT`. La política RLS de `DELETE` se prueba con un rol exclusivo de pruebas (`puntuale_rls_probe`) que no crea ninguna migración. La migración `0001` se ajustó en sitio porque nunca se publicó ni se aplicó fuera de bases efímeras o locales.
 - `received_at` lo fija la base de datos (`statement_timestamp()`) mediante el puerto `ServerClock`; el reloj fijo solo existe en pruebas.
 - La ingesta devuelve la clasificación `clockSkew` (`DEVICE_CLOCK_OFFSET`, `FUTURE_EVENT`) sin rechazar ni persistir la alerta.
 - La auditoría proyecta `before_data` y `after_data` a una lista permitida por entidad y rechaza los campos sensibles.

@@ -128,43 +128,31 @@ describe('escritura cruzada', () => {
     expect(rows[0].display_name).toBe('Empleado B');
   });
 
-  it('el rol de aplicación no puede borrar colaboradores (solo baja lógica)', async () => {
-    await expect(
-      asTenant(a.tenantId, (client) =>
-        client.query('DELETE FROM employee WHERE id = $1', [a.employeeId]),
-      ),
-    ).rejects.toMatchObject({ code: '42501' });
-  });
-
   it('la política RLS de DELETE aísla empresas (probada con un rol exclusivo de pruebas)', async () => {
-    // puntuale_rls_probe solo existe en este contenedor efímero, no puede iniciar sesión y
-    // no lo crea ninguna migración: sirve únicamente para ejercer la política de DELETE.
+    // puntuale_rls_probe solo existe en este contenedor efímero, no puede iniciar sesión y no lo
+    // crea ninguna migración. Sirve únicamente para ejercer la política RLS de DELETE; el borrado
+    // en sí lo sigue rechazando el trigger employee_reject_delete (ver employee-deletion.int.test.ts).
     const extra = await db.adminPool.query<{ id: string }>(
       `INSERT INTO employee (tenant_id, employee_number, display_name)
        VALUES ($1, 'E-DEL', 'Empleado sin historial') RETURNING id`,
       [b.tenantId],
     );
     const id = extra.rows[0]!.id;
+
+    // Desde A, la fila de B no es visible para DELETE: 0 filas y el trigger ni siquiera se dispara.
     const affected = await asRlsProbe(a.tenantId, async (client) => {
       const result = await client.query('DELETE FROM employee WHERE id = $1', [id]);
       return result.rowCount;
     });
     expect(affected).toBe(0);
+
+    // Desde B, la fila sí es visible: la política filtra, no bloquea todo. El trigger la rechaza.
+    await expect(
+      asRlsProbe(b.tenantId, (client) => client.query('DELETE FROM employee WHERE id = $1', [id])),
+    ).rejects.toThrow(/no admite borrado físico/);
+
     const { rowCount } = await db.adminPool.query('SELECT 1 FROM employee WHERE id = $1', [id]);
     expect(rowCount).toBe(1);
-
-    // En su propia empresa, el mismo rol sí puede: la política filtra, no bloquea todo.
-    const own = await asRlsProbe(b.tenantId, async (client) => {
-      const result = await client.query('DELETE FROM employee WHERE id = $1', [id]);
-      return result.rowCount;
-    });
-    expect(own).toBe(1);
-  });
-
-  it('un colaborador con historial no se puede borrar ni con la conexión administrativa (FK RESTRICT)', async () => {
-    await expect(
-      db.adminPool.query('DELETE FROM employee WHERE id = $1', [a.employeeId]),
-    ).rejects.toMatchObject({ code: '23001' });
   });
 
   it('INSERT con el tenant_id de B desde el contexto de A es rechazado por la RLS', async () => {
