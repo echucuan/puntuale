@@ -25,7 +25,7 @@ Todos los cambios relevantes del proyecto se registran aquí. El formato se basa
   - `GET /health`;
   - configuración validada con Zod;
   - `withTenant` (transacción con `app.tenant_id` local);
-  - módulo `tenancy`: `TenantGuard` (401/404), `NoSessionResolver`, `TestSessionResolver` solo con `NODE_ENV=test`, y `GET /api/t/:tenantId/context`;
+  - módulo `tenancy`: `TenantGuard` (401/404), `NoSessionResolver` y `GET /api/t/:tenantId/context`;
   - módulo `audit`: auditoría en la misma transacción;
   - módulo `time-tracking`: ingesta idempotente `created`/`duplicate`/`conflict`, sin endpoint;
   - errores con la forma `ApiError`.
@@ -47,3 +47,10 @@ Todos los cambios relevantes del proyecto se registran aquí. El formato se basa
 - La documentación de inmutabilidad ya no afirma protección frente a un superusuario que actúe deliberadamente; se agregó el procedimiento de cambios de emergencia.
 - ADR 0013 (PostgreSQL 18 como versión oficial) y revisiones de los ADR 0010 (fuente de la hora del servidor) y 0011 (idempotencia: `client_event_id` obligatorio, `duplicate` sin auditoría, `conflict` rechazado y auditado).
 - Documentados los scripts de instalación denegados y la versión exacta de TypeScript.
+
+### Seguridad (revisión de Codex de 1.0-a)
+
+- `TestSessionResolver` sale de `src/`: vive en `apps/api/test/support/` y solo lo registra la composición explícita `createTestApp`. Exige `NODE_ENV=test`, `VITEST=true`, `PUNTUALE_TEST_COMPOSITION=explicit-test-composition` y una base local. El módulo productivo usa siempre `NoSessionResolver` (revisión del ADR 0007).
+- Las acciones de CI se fijan por SHA completo de commit con la versión legible; `pnpm check:ci-pins` (dentro de `pnpm check`) lo verifica.
+- `overrides` de `glob` (^14.0.2) y `minimatch` (^11.0.1) para los avisos `GHSA-3g3m-2fjr-6pw4` y `GHSA-g3hv-75wg-m249`; `pnpm audit --prod` y `pnpm audit --dev` quedan sin vulnerabilidades.
+- Riesgos aceptados con límites (R2–R7, R10) documentados en `docs/security/README.md`.

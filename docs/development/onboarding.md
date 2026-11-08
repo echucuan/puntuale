@@ -35,12 +35,13 @@ pnpm install
 
 | Comando                  | Qué hace                                                                                                                      | ¿Requiere Docker? |
 | ------------------------ | ----------------------------------------------------------------------------------------------------------------------------- | ----------------- |
-| `pnpm check`             | Formato, lint, tipos, pruebas unitarias y frontera V1/V2. **Debe pasar antes de cada commit.**                                | No                |
+| `pnpm check`             | Formato, lint, tipos, pruebas unitarias, frontera V1/V2 y acciones de CI fijadas. **Debe pasar antes de cada commit.**        | No                |
 | `pnpm format`            | Aplica el formato de Prettier                                                                                                 | No                |
 | `pnpm lint`              | ESLint en todo el monorepo                                                                                                    | No                |
 | `pnpm typecheck`         | Ejecuta `tsc --noEmit` en cada paquete                                                                                        | No                |
 | `pnpm test`              | Pruebas unitarias (Vitest) de cada paquete                                                                                    | No                |
 | `pnpm check:boundary`    | Falla si el código ejecutable contiene términos de nómina ([ADR 0006](../adr/0006-v1-v2-separation-and-versioned-closure.md)) | No                |
+| `pnpm check:ci-pins`     | Falla si una acción de `.github/workflows/` no está fijada a un SHA completo con `# vX.Y.Z`                                   | No                |
 | `pnpm build`             | Compila la web                                                                                                                | No                |
 | `pnpm test:integration`  | Integración contra PostgreSQL 18 (Testcontainers): RLS, inmutabilidad, auditoría, ingesta                                     | **Sí**            |
 | `pnpm test:e2e`          | API por HTTP (supertest) contra PostgreSQL 18                                                                                 | **Sí**            |
@@ -75,6 +76,10 @@ Las herramientas comunes se configuran en la raíz. No hay un paquete `packages/
 Una instalación limpia (`pnpm install --frozen-lockfile`) ejecuta `pnpm check`, `pnpm build`, `pnpm test:integration` y `pnpm test:e2e` sin esos scripts; CI lo comprueba en cada cambio. Si una dependencia nueva necesita compilar, se autoriza en `allowBuilds` con una justificación en esta tabla.
 
 **TypeScript** está fijado en `6.0.3` exacto (`package.json` y `pnpm-lock.yaml`).
+
+**Overrides de seguridad:** `pnpm-workspace.yaml` fuerza `glob` ≥ 14.0.2 y `minimatch` ≥ 11.0.1 en las dependencias de desarrollo que los traen. El motivo y los avisos están en [`docs/security/README.md`](../security/README.md). Revisa con `pnpm audit --prod` y `pnpm audit --dev` por separado.
+
+**Pruebas con sesión:** la aplicación productiva no tiene ningún atajo de sesión. Las pruebas e2e que necesitan una sesión usan `createTestApp` (`apps/api/test/support/create-test-app.ts`), que sustituye el resolvedor por `TestSessionResolver`. Este solo funciona con la configuración de `vitest.e2e.config.ts` y una base local ([ADR 0007](../adr/0007-own-authentication.md)).
 
 **Decoradores en la API:** NestJS usa decoradores heredados (`experimentalDecorators`) sin `emitDecoratorMetadata`. Por eso cada dependencia se inyecta con `@Inject(TOKEN)` explícito.
 
