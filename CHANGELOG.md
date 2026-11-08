@@ -7,6 +7,12 @@ Todos los cambios relevantes del proyecto se registran aquí. El formato se basa
 ### Agregado
 
 - ADR 0014: sesiones en PostgreSQL y acceso controlado a la identidad.
+- Migración `0002_sessions_security`: `app_user_credential`, `auth_session`, `security_event` (solo inserción), `login_failure`, `rate_limit_bucket`, el rol `puntuale_auth_definer` y las funciones `SECURITY DEFINER` `auth_*`.
+- `pnpm db:seed` con cuentas ficticias de desarrollo.
+
+### Cambiado
+
+- `puntuale_app` ya no tiene `SELECT` sobre `app_user` (R5).
 
 ## [Sin publicar] · 1.0-a Base del monorepo
 

@@ -16,12 +16,12 @@ afterAll(async () => {
 });
 
 describe('migraciones', () => {
-  it('aplica 0001 y una segunda ejecución no vuelve a aplicar nada', async () => {
+  it('aplica las migraciones y una segunda ejecución no vuelve a aplicar nada', async () => {
     const client = await db.adminPool.connect();
     try {
       const result = await runMigrations(client);
       expect(result.applied).toEqual([]);
-      expect(result.skipped).toContain('0001');
+      expect(result.skipped).toEqual(expect.arrayContaining(['0001', '0002']));
     } finally {
       client.release();
     }
