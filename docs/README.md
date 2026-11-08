@@ -40,16 +40,17 @@ Cada documento declara su estado al inicio:
 
 ## Estado de los módulos
 
-| Módulo                                                 | Paso  | Estado                                 |
-| ------------------------------------------------------ | ----- | -------------------------------------- |
-| Base del monorepo (contratos, reglas, db, api, web)    | 1.0-a | Implementado (pendiente de aceptación) |
-| `tenancy`, `audit`, persistencia de `attendance_event` | 1.0-a | Implementado (pendiente de aceptación) |
-| `identity` (autenticación, roles, permisos)            | 1.0-b | Planificado                            |
-| `employees`, `schedules`, `period-calendars`           | 1.0-c | Planificado                            |
-| `time-tracking` (ingesta, PWA), `workdays`             | 1.0-d | Planificado                            |
-| `periods` (cierre, conformidad, reapertura)            | 1.0-e | Planificado                            |
-| `incidents`, `clarifications`, `corrections`           | 1.0-f | Planificado                            |
-| `reports`                                              | 1.0-g | Planificado                            |
+| Módulo                                                 | Paso    | Estado                                 |
+| ------------------------------------------------------ | ------- | -------------------------------------- |
+| Base del monorepo (contratos, reglas, db, api, web)    | 1.0-a   | Implementado (pendiente de aceptación) |
+| `tenancy`, `audit`, persistencia de `attendance_event` | 1.0-a   | Implementado (pendiente de aceptación) |
+| `identity` (sesiones, login, CSRF, límites)            | 1.0-b.1 | Implementado (pendiente de aceptación) |
+| `identity` (membresías, roles, permisos, MFA)          | 1.0-b.2 | Planificado                            |
+| `employees`, `schedules`, `period-calendars`           | 1.0-c   | Planificado                            |
+| `time-tracking` (ingesta, PWA), `workdays`             | 1.0-d   | Planificado                            |
+| `periods` (cierre, conformidad, reapertura)            | 1.0-e   | Planificado                            |
+| `incidents`, `clarifications`, `corrections`           | 1.0-f   | Planificado                            |
+| `reports`                                              | 1.0-g   | Planificado                            |
 
 ## ADRs
 
@@ -61,7 +62,7 @@ Cada documento declara su estado al inicio:
 | [0004](adr/0004-immutable-attendance-events.md)                 | Marcaciones inmutables                                           | Aceptado                      |
 | [0005](adr/0005-transactional-audit.md)                         | Auditoría en la misma transacción                                | Aceptado                      |
 | [0006](adr/0006-v1-v2-separation-and-versioned-closure.md)      | Separación V1/V2 y cierre versionado                             | Aceptado                      |
-| [0007](adr/0007-own-authentication.md)                          | Autenticación propia (se implementa en 1.0-b)                    | Aceptado                      |
+| [0007](adr/0007-own-authentication.md)                          | Autenticación propia (sesiones en 1.0-b.1, MFA en 1.0-b.2)       | Aceptado                      |
 | [0008](adr/0008-public-repo-landing-at-root-license-pending.md) | Repositorio público, landing en la raíz, licencia pendiente      | Aceptado (licencia pendiente) |
 | [0009](adr/0009-naming-conventions.md)                          | Convenciones de nombres                                          | Aceptado                      |
 | [0010](adr/0010-time-and-language.md)                           | Manejo del tiempo e idioma                                       | Aceptado                      |

@@ -1,6 +1,6 @@
 # Seguridad
 
-> **Estado: Implementado (1.0-a)**, salvo donde se indica. Los riesgos del modo sin conexión están en [`offline.md`](offline.md) (**Planificado**).
+> **Estado: Implementado (1.0-b.1)**, salvo donde se indica. Los riesgos del modo sin conexión están en [`offline.md`](offline.md) (**Planificado**).
 
 ## Controles vigentes
 
@@ -11,8 +11,15 @@
 | Rol de mínimo privilegio    | `puntuale_app`: sin superusuario, sin `BYPASSRLS`, sin ser dueño, permisos por tabla; sin `DELETE` ni `TRUNCATE` en ninguna tabla                                                                                                                                                 | `migrations.int.test.ts`                                         |
 | Inmutabilidad               | Sin `UPDATE`/`DELETE` para el rol y trigger `reject_mutation()` contra cambios accidentales; un bypass de superusuario solo con el [procedimiento de emergencia](../operations/emergency-changes.md)                                                                              | `immutability.int.test.ts`                                       |
 | Auditoría                   | Misma transacción que el cambio                                                                                                                                                                                                                                                   | `audit.int.test.ts`                                              |
-| Sin atajos de autenticación | El módulo productivo registra siempre `NoSessionResolver`. `TestSessionResolver` vive fuera de `src/` (`apps/api/test/support/`), solo lo registra `createTestApp` y exige `NODE_ENV=test`, `VITEST=true`, la marca de composición y una base local                               | `session-resolver.test.ts`, `test-session.resolver.test.ts`, e2e |
-| Errores sin fugas           | `ApiExceptionFilter`: sin SQL, pilas ni valores en las respuestas                                                                                                                                                                                                                 | e2e                                                              |
+| Sin atajos de autenticación | La aplicación registra siempre `CookieSessionResolver`. `TestSessionResolver` vive fuera de `src/` (`apps/api/test/support/`), solo lo registra `createTestApp` y exige `NODE_ENV=test`, `VITEST=true`, la marca de composición y una base local                                  | `session-resolver.test.ts`, `test-session.resolver.test.ts`, e2e |
+| Sesiones                    | Cookie `HttpOnly` y `SameSite=Lax`, `__Host-` y `Secure` en producción; solo el SHA-256 del token en la base; 12 h absolutas y 30 min de inactividad; rotación y revocación inmediata                                                                                             | `auth.e2e.test.ts`                                               |
+| Contraseñas                 | Argon2id (64 MiB, 3 iteraciones, paralelismo 1); misma respuesta y mismo trabajo si la cuenta no existe                                                                                                                                                                           | `password-hasher.test.ts`, `auth.e2e.test.ts`                    |
+| Acceso a identidades        | `puntuale_app` no lee `app_user` ni credenciales; funciones `SECURITY DEFINER` con `search_path` fijo y dueño sin privilegios                                                                                                                                                     | `auth-schema.int.test.ts`                                        |
+| CSRF                        | `X-CSRF-Token` ligado a la sesión más validación de `Origin` o `Referer`, incluidos login y logout                                                                                                                                                                                | `identity-domain.test.ts`, `auth.e2e.test.ts`                    |
+| CORS y cabeceras            | Lista explícita de orígenes con credenciales; Helmet con CSP de API; HSTS solo en producción                                                                                                                                                                                      | `app-config.test.ts`, `auth.e2e.test.ts`                         |
+| Límites de tasa             | Login por cuenta e IP con espera progresiva y sin bloqueo permanente; API por IP y sesión; PostgreSQL con puerto para Redis                                                                                                                                                       | `identity-domain.test.ts`, `auth.e2e.test.ts`                    |
+| Eventos de seguridad        | `security_event` de solo inserción, en la misma transacción; HMAC del identificador si no hay persona                                                                                                                                                                             | `auth-schema.int.test.ts`, `auth.e2e.test.ts`                    |
+| Errores sin fugas           | `ApiExceptionFilter`: sin SQL, pilas ni valores en las respuestas; un cuerpo mayor a 100 KB responde 413 sin registrar su contenido                                                                                                                                               | e2e                                                              |
 | Colaboradores               | Sin borrado físico: sin `DELETE` ni `TRUNCATE` para el rol, trigger `reject_employee_delete()` para cualquier rol en el flujo normal y FK `ON DELETE RESTRICT`. La RLS de `DELETE` se prueba con un rol exclusivo de pruebas (`puntuale_rls_probe`) que no crea ninguna migración | `employee-deletion.int.test.ts`, `tenant-isolation.int.test.ts`  |
 | Auditoría sin secretos      | Lista permitida por entidad (`audit-data-policy.ts`); nunca contraseñas, MFA, tokens, cookies ni credenciales                                                                                                                                                                     | `audit-data-policy.test.ts`, `audit.int.test.ts`                 |
 | Hora del servidor           | `received_at` = `statement_timestamp()` de la base; el contrato no acepta ese campo                                                                                                                                                                                               | `ingest.int.test.ts`                                             |
@@ -28,6 +35,7 @@
 3. Nunca agregues a `src/` un resolvedor de sesión que acepte identidades sin verificar. Los dobles de prueba van en `apps/api/test/support/`.
 4. No subas secretos, datos reales ni los PDF legales (repositorio público).
 5. Toda acción nueva de CI se fija por SHA completo con `# vX.Y.Z`; obtén el SHA con `git ls-remote --tags https://github.com/<owner>/<repo>.git`.
+6. El hash Argon2id solo se usa dentro de la API para verificar contraseñas: nunca se envía al navegador, se registra ni se audita (ADR 0014).
 
 ## Dependencias con vulnerabilidades conocidas
 
@@ -42,22 +50,22 @@ Con los overrides pasan `pnpm check`, `pnpm build`, `pnpm test:integration` y `p
 
 ## Riesgos aceptados con límites (revisión de seguridad de 1.0-a)
 
-Estos riesgos se aceptan **solo** para 1.0-a. Cada uno indica cuándo deja de ser aceptable.
+Riesgos registrados en la revisión de 1.0-a, con su estado tras 1.0-b.1. Cada uno indica cuándo deja de ser aceptable.
 
-| #   | Riesgo                                        | Límite de la aceptación                                                                                                                                             |
-| --- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| R2  | No hay autenticación real                     | Debe existir antes de exponer cualquier endpoint funcional en 1.0-b ([ADR 0007](../adr/0007-own-authentication.md)).                                                |
-| R3  | Un superusuario puede saltarse triggers y RLS | Solo mediante el [procedimiento de emergencia](../operations/emergency-changes.md): fuera de la API, con respaldo, revisión, autorización y registro.               |
-| R4  | Las migraciones corren con un superusuario    | Solo en desarrollo local y CI. Antes de producción se requiere un rol migrador separado, sin superusuario.                                                          |
-| R5  | `app_user` no tiene RLS (identidad global)    | En 1.0-b se define cómo se limita el acceso a identidades. El rol de la aplicación no debe permitir que cualquier usuario autenticado vea todos los correos.        |
-| R6  | Sin límites de tasa, Helmet ni CORS           | Obligatorios antes de exponer autenticación, marcaciones o cualquier endpoint de escritura.                                                                         |
-| R7  | `trust proxy` sin resolver                    | Se resuelve antes de desplegar detrás de un proxy, con la lista de proxies de confianza documentada.                                                                |
-| R8  | Acciones de CI por etiqueta                   | **Resuelto:** fijadas por SHA (ver «Acciones de CI»).                                                                                                               |
-| R9  | `glob` y `minimatch` vulnerables (desarrollo) | **Resuelto:** overrides (ver la sección anterior).                                                                                                                  |
-| R10 | Registros sin estructura                      | Antes de producción: registros estructurados, sin secretos ni datos personales, un identificador de error devuelto al cliente y acceso restringido a los registros. |
+| #   | Riesgo                                        | Límite de la aceptación                                                                                                                                                               |
+| --- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| R2  | Autenticación incompleta                      | **Reducido en 1.0-b.1:** existen sesiones reales ([ADR 0014](../adr/0014-postgres-sessions-and-login.md)). Faltan roles, permisos y MFA (1.0-b.2).                                    |
+| R3  | Un superusuario puede saltarse triggers y RLS | Solo mediante el [procedimiento de emergencia](../operations/emergency-changes.md): fuera de la API, con respaldo, revisión, autorización y registro.                                 |
+| R4  | Las migraciones corren con un superusuario    | Solo en desarrollo local y CI. Antes de producción se requiere un rol migrador separado, sin superusuario.                                                                            |
+| R5  | `app_user` no tiene RLS (identidad global)    | **Resuelto en 1.0-b.1:** `puntuale_app` no tiene `SELECT`; solo funciones `SECURITY DEFINER`. La API recibe internamente el hash Argon2id solo para verificar contraseñas (ADR 0014). |
+| R6  | Sin límites de tasa, Helmet ni CORS           | **Resuelto en 1.0-b.1.** Los límites por IP dependen de R7.                                                                                                                           |
+| R7  | `trust proxy` sin resolver                    | Se resuelve antes de desplegar detrás de un proxy, con la lista de proxies de confianza documentada.                                                                                  |
+| R8  | Acciones de CI por etiqueta                   | **Resuelto:** fijadas por SHA (ver «Acciones de CI»).                                                                                                                                 |
+| R9  | `glob` y `minimatch` vulnerables (desarrollo) | **Resuelto:** overrides (ver la sección anterior).                                                                                                                                    |
+| R10 | Registros sin estructura                      | Antes de producción: registros estructurados, sin secretos ni datos personales, un identificador de error devuelto al cliente y acceso restringido a los registros.                   |
 
 ## Pendiente (Planificado)
 
-- Autenticación, sesiones, roles y permisos (1.0-b, [ADR 0007](../adr/0007-own-authentication.md)).
-- Límites de tasa y cabeceras de seguridad HTTP (1.0-b).
+- Roles, permisos, MFA y auditoría por empresa de la identidad (1.0-b.2).
+- Retención y purga de `auth_session` y `security_event` (antes de producción).
 - Cadena de hashes en la auditoría (1.x, [ADR 0005](../adr/0005-transactional-audit.md)).

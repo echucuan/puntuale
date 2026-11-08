@@ -8,11 +8,16 @@ Todos los cambios relevantes del proyecto se registran aquí. El formato se basa
 
 - ADR 0014: sesiones en PostgreSQL y acceso controlado a la identidad.
 - Migración `0002_sessions_security`: `app_user_credential`, `auth_session`, `security_event` (solo inserción), `login_failure`, `rate_limit_bucket`, el rol `puntuale_auth_definer` y las funciones `SECURITY DEFINER` `auth_*`.
+- Módulo `identity`: login, logout, sesión actual, listado y revocación de sesiones propias, rotación, Argon2id, CSRF, límites de tasa y eventos de seguridad.
+- Helmet, CORS con lista explícita y un identificador por petición (`X-Request-Id`).
 - `pnpm db:seed` con cuentas ficticias de desarrollo.
+- Un cuerpo JSON mayor a 100 KB responde 413 `payload_too_large` con el formato estándar de error.
 
 ### Cambiado
 
 - `puntuale_app` ya no tiene `SELECT` sobre `app_user` (R5).
+- `CookieSessionResolver` reemplaza a `NoSessionResolver`: las rutas de empresa aceptan una sesión real.
+- La configuración exige `AUTH_SECRET` y `CORS_ORIGINS`.
 
 ## [Sin publicar] · 1.0-a Base del monorepo
 

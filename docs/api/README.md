@@ -1,6 +1,6 @@
 # Contratos de la API
 
-> **Estado: Implementado (1.0-a).** Solo dos endpoints. Los esquemas viven en `@puntuale/contracts`.
+> **Estado: Implementado (1.0-b.1).** Salud, sesiones y contexto de empresa. Los esquemas viven en `@puntuale/contracts`.
 
 ## Convenciones
 
@@ -8,13 +8,17 @@
 - Las rutas de una empresa tienen la forma `/api/t/:tenantId/...` y pasan por `TenantGuard`.
 - Errores con una sola forma, `ApiErrorSchema`: `{ "error": { "code": "...", "message": "..." } }`. El mensaje está en español y no expone detalles internos.
 
-| HTTP | `code`              | Cuándo                                                           |
-| ---- | ------------------- | ---------------------------------------------------------------- |
-| 401  | `unauthenticated`   | No hay sesión                                                    |
-| 404  | `not_found`         | No existe **o** no tienes acceso (no se distingue)               |
-| 409  | `conflict`          | Reservado: `client_event_id` repetido con otra evidencia (1.0-d) |
-| 422  | `validation_failed` | Reservado: entrada fuera de contrato                             |
-| 500  | `internal_error`    | Error inesperado                                                 |
+| HTTP | `code`                | Cuándo                                                              |
+| ---- | --------------------- | ------------------------------------------------------------------- |
+| 401  | `unauthenticated`     | No hay sesión                                                       |
+| 401  | `invalid_credentials` | Login rechazado (misma respuesta para cualquier causa)              |
+| 403  | `forbidden`           | Falla CSRF o el origen no está permitido                            |
+| 404  | `not_found`           | No existe **o** no tienes acceso (no se distingue)                  |
+| 409  | `conflict`            | Reservado: `client_event_id` repetido con otra evidencia (1.0-d)    |
+| 413  | `payload_too_large`   | Cuerpo JSON mayor al límite de 100 KB; no llega a los controladores |
+| 422  | `validation_failed`   | Entrada fuera de contrato                                           |
+| 429  | `rate_limited`        | Límite de tasa; incluye `Retry-After` en segundos                   |
+| 500  | `internal_error`      | Error inesperado                                                    |
 
 ## Endpoints
 
@@ -42,4 +46,21 @@ Devuelve el contexto que validó el `TenantGuard`. Respuesta `TenantContextRespo
 | `tenantId` que no es UUID                            | 404  |
 | Membresía activa                                     | 200  |
 
-En 1.0-a no existe autenticación real: fuera de las pruebas, toda ruta de empresa responde 401 ([ADR 0007](../adr/0007-own-authentication.md)).
+La sesión la resuelve la cookie ([ADR 0014](../adr/0014-postgres-sessions-and-login.md)).
+
+## Sesiones
+
+Toda petición `POST`, `PUT`, `PATCH` o `DELETE` a `/api/` exige `X-CSRF-Token` y un `Origin` permitido o, si falta, un `Referer` permitido. Un `Origin` desconocido responde 403 en cualquier método.
+
+| Endpoint                               | Sesión | CSRF | Éxito | Contrato                                                |
+| -------------------------------------- | ------ | ---- | ----- | ------------------------------------------------------- |
+| `GET /api/auth/csrf`                   | No     | No   | 200   | `CsrfResponseSchema`                                    |
+| `POST /api/auth/login`                 | No     | Sí   | 200   | `LoginRequestSchema` → `CurrentSessionResponseSchema`   |
+| `POST /api/auth/logout`                | Sí     | Sí   | 204   | Sin cuerpo                                              |
+| `GET /api/auth/session`                | Sí     | No   | 200   | `CurrentSessionResponseSchema`                          |
+| `GET /api/auth/sessions`               | Sí     | No   | 200   | `ActiveSessionsResponseSchema`                          |
+| `DELETE /api/auth/sessions/:sessionId` | Sí     | Sí   | 204   | Sin cuerpo; una sesión ajena o inexistente responde 404 |
+
+`GET /api/auth/csrf` entrega un token ligado a la sesión o, si no hay sesión, a una cookie `HttpOnly` anónima. El token cambia al iniciar sesión.
+
+La cookie de sesión se llama `puntuale_session` en desarrollo y `__Host-puntuale_session` en producción. El token nunca aparece en el cuerpo de una respuesta.

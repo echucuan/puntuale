@@ -9,7 +9,7 @@ export interface SessionRequest {
 }
 
 /**
- * Puerto que resuelve la sesión de una petición. La autenticación real llega en 1.0-b (ADR 0007).
+ * Puerto que resuelve la sesión de una petición. Lo implementa el módulo `identity` (ADR 0014).
  * Devuelve `null` si no hay una sesión válida.
  */
 export interface SessionResolver {

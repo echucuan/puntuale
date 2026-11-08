@@ -1,7 +1,7 @@
 # ADR 0007 · Autenticación propia con sesiones en el servidor
 
 - **Fecha:** 2026-11-07
-- **Estado:** Aceptado. **Su implementación está planificada para el paso 1.0-b**; en el 1.0-a no hay autenticación.
+- **Estado:** Aceptado. Implementado en parte en 1.0-b.1 ([ADR 0014](0014-postgres-sessions-and-login.md)); el MFA llega en 1.0-b.2.
 
 ## Contexto
 
@@ -29,6 +29,10 @@ Los usuarios son administradores, personal de RH, supervisores y colaboradores. 
 ## Revisión (revisión de seguridad de Codex, 1.0-a)
 
 La primera versión registraba `TestSessionResolver` desde el módulo productivo cuando `NODE_ENV=test`. Una variable mal configurada habría bastado para aceptar identidades sin verificar. Se cambió a lo descrito arriba: el adaptador sale del código productivo y la protección ya no depende solo de una variable de entorno. Lo comprueban `src/modules/tenancy/infrastructure/session-resolver.test.ts` (el módulo productivo usa `NoSessionResolver` con cualquier `NODE_ENV`, y ningún archivo de `src/` menciona el adaptador ni su encabezado), `test/unit/test-session.resolver.test.ts` (cada condición por separado) y el e2e `composición productiva (createApp)` (401 aunque se envíe el encabezado de pruebas).
+
+## Revisión (1.0-b.1)
+
+El [ADR 0014](0014-postgres-sessions-and-login.md) implementa las sesiones. `NoSessionResolver` se retiró: la aplicación registra `CookieSessionResolver`. El texto anterior se conserva como registro de lo decidido para 1.0-a. Las condiciones de `TestSessionResolver` no cambian, y la comprobación estática pasó a `src/modules/identity/infrastructure/session-resolver.test.ts`.
 
 ## Consecuencias
 
