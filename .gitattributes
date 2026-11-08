@@ -1,0 +1,15 @@
+# Normalización por defecto: LF en todo el código nuevo.
+* text=auto eol=lf
+
+# Landing pública en la raíz: se preserva byte a byte (ver docs/landing.md).
+# script.js y styles.css tienen finales de línea mixtos en el historial;
+# normalizarlos contaría como una modificación de la landing.
+/index.html -text
+/script.js -text
+/styles.css -text
+/assets/** binary
+
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff2 binary

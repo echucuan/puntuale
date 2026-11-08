@@ -1,0 +1,20 @@
+# Dependencias y salidas de compilación
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+.vite/
+
+# Variables de entorno: solo se versiona el ejemplo
+.env
+.env.*
+!.env.example
+
+# Registros y archivos del sistema
+*.log
+.DS_Store
+Thumbs.db
+
+# Copia local duplicada de la landing (la versión oficial está en la raíz).
+# Se conserva en disco hasta que el propietario decida qué hacer con ella.
+puntuale_landingpage/
