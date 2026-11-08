@@ -1,0 +1,24 @@
+{
+  "name": "@puntuale/db",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Migraciones SQL, bootstrap de roles y utilidades de base de datos para pruebas.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./testing": "./src/testing.ts"
+  },
+  "scripts": {
+    "migrate": "tsx --env-file-if-exists=../.env src/cli.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test:integration": "vitest run --config vitest.integration.config.ts"
+  },
+  "dependencies": {
+    "pg": "8.23.1"
+  },
+  "devDependencies": {
+    "@testcontainers/postgresql": "12.2.1",
+    "@types/pg": "8.23.1",
+    "tsx": "4.23.15"
+  }
+}

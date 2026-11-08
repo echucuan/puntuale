@@ -1,0 +1,26 @@
+/** Sesión autenticada: solo identifica a la persona. No dice nada sobre a qué empresa pertenece. */
+export interface Session {
+  userId: string;
+}
+
+/** Datos mínimos de la petición que necesita un resolvedor de sesión (sin acoplarse a Express). */
+export interface SessionRequest {
+  headers: Record<string, string | string[] | undefined>;
+}
+
+/**
+ * Puerto que resuelve la sesión de una petición. La autenticación real llega en 1.0-b (ADR 0007).
+ * Devuelve `null` si no hay una sesión válida.
+ */
+export interface SessionResolver {
+  resolve(request: SessionRequest): Promise<Session | null>;
+}
+
+export const SESSION_RESOLVER = Symbol('SESSION_RESOLVER');
+
+/** Contexto que el `TenantGuard` adjunta a la petición después de validar la membresía. */
+export interface TenantContext {
+  tenantId: string;
+  userId: string;
+  membershipId: string;
+}

@@ -1,0 +1,70 @@
+/* Estilos base. Los colores vienen de @puntuale/ui (variables --pt-*). */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  border-top: 5px solid var(--pt-navy);
+  background: var(--pt-gray);
+  color: var(--pt-ink);
+  font-family: var(--pt-font);
+  -webkit-font-smoothing: antialiased;
+}
+
+.pt-shell {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+
+.pt-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.pt-wordmark {
+  color: var(--pt-navy);
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.pt-badge {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--pt-pale);
+  color: var(--pt-blue);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.pt-card {
+  padding: 24px;
+  border: 1px solid var(--pt-line);
+  border-radius: 12px;
+  background: var(--pt-white);
+}
+
+.pt-card h1 {
+  margin: 0 0 8px;
+  color: var(--pt-navy);
+  font-size: 1.25rem;
+}
+
+.pt-status {
+  margin: 0;
+  color: var(--pt-muted);
+}
+
+.pt-status--ok {
+  color: #1e7a46;
+}
+
+.pt-status--degraded,
+.pt-status--unreachable {
+  color: #a4372d;
+}

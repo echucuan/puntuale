@@ -1,0 +1,14 @@
+# Landing pública: se preserva byte a byte (ADR 0008)
+index.html
+script.js
+styles.css
+assets/
+puntuale_landingpage/
+
+# Documento histórico: no se reformatea
+docs/proposals/
+
+# Generados
+pnpm-lock.yaml
+**/dist/
+**/coverage/
