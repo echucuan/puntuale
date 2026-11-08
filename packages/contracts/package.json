@@ -1,0 +1,17 @@
+{
+  "name": "@puntuale/contracts",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Tipos, enumeraciones y esquemas Zod compartidos entre la API y la web.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "zod": "4.6.7"
+  }
+}
