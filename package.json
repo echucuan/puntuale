@@ -18,7 +18,9 @@
     "db:up": "docker compose -f infra/docker-compose.yml --env-file .env up -d --wait db",
     "db:down": "docker compose -f infra/docker-compose.yml down",
     "db:migrate": "pnpm --filter @puntuale/db migrate",
-    "test:integration": "pnpm -r --if-present test:integration"
+    "test:integration": "pnpm -r --if-present test:integration",
+    "test:e2e": "pnpm -r --if-present test:e2e",
+    "dev": "pnpm --filter @puntuale/api dev"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

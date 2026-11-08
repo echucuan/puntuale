@@ -21,4 +21,14 @@ Todos los cambios relevantes del proyecto se registran aquí. El formato se basa
 - `@puntuale/contracts`: enumeraciones (cuatro estados de asistencia con etiquetas en español), validación de tiempo (IANA, hora local, instante), contrato de marcación que separa evidencia y transporte, y contratos HTTP base.
 - `@puntuale/domain-rules`: JSON canónico (RFC 8785) y SHA-256, UUIDv7, ingesta idempotente y detección de `CLOCK_SKEW`, precedencia de estados, identidad estable de la jornada y alertas sin duplicados.
 - `@puntuale/db`: migración `0001_base_multitenant` (`tenant`, `app_user`, `user_tenant`, `employee` mínimo, `attendance_event`, `audit_event`), `app_current_tenant()` que falla cerrada, RLS `ENABLE` + `FORCE`, triggers de solo inserción y de `tenant_id` inmutable, permisos mínimos de `puntuale_app`; ejecutor de migraciones con checksum y `startTestDatabase()` con Testcontainers.
+- `@puntuale/api` (NestJS 12):
+  - `GET /health`;
+  - configuración validada con Zod;
+  - `withTenant` (transacción con `app.tenant_id` local);
+  - módulo `tenancy`: `TenantGuard` (401/404), `NoSessionResolver`, `TestSessionResolver` solo con `NODE_ENV=test`, y `GET /api/t/:tenantId/context`;
+  - módulo `audit`: auditoría en la misma transacción;
+  - módulo `time-tracking`: ingesta idempotente `created`/`duplicate`/`conflict`, sin endpoint;
+  - errores con la forma `ApiError`.
+- Pruebas de integración de aislamiento, inmutabilidad, auditoría e ingesta, y pruebas e2e del guard.
+- Reglas de negocio documentadas en `docs/business-rules/` (aislamiento, inmutabilidad y auditoría).
 - Infraestructura local: `infra/docker-compose.yml` (PostgreSQL 18), `.env.example` con valores ficticios y los comandos `db:up`, `db:down`, `db:migrate` y `test:integration`.
