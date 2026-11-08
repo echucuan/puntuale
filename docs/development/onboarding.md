@@ -61,9 +61,20 @@ Las herramientas comunes se configuran en la raíz. No hay un paquete `packages/
 | `.prettierrc.json` / `.prettierignore` | Formato. Ignora la landing y los documentos históricos. |
 | `.editorconfig` / `.gitattributes`     | Fin de línea LF. La landing se preserva byte a byte.    |
 
-**Versiones fijadas:** TypeScript queda en 6.0.x porque `typescript-eslint` 8 todavía no admite TypeScript ≥ 6.1.
+**Versiones fijadas:** TypeScript queda en 6.0.3 porque `typescript-eslint` 8 todavía no admite TypeScript ≥ 6.1.
 
-**Scripts de instalación:** `pnpm-workspace.yaml` deniega explícitamente (`allowBuilds`) los scripts de instalación de las dependencias. Si una dependencia nueva necesita compilar, se aprueba ahí, con una justificación.
+**Scripts de instalación:** `pnpm-workspace.yaml` deniega explícitamente (`allowBuilds`) los scripts de instalación de las dependencias. **Hoy no hay ninguna dependencia autorizada** para ejecutar scripts:
+
+| Dependencia    | Viene de                    | Por qué no hace falta su script                                     |
+| -------------- | --------------------------- | ------------------------------------------------------------------- |
+| `esbuild`      | `tsx`, Vite                 | Su binario llega como dependencia opcional de la plataforma         |
+| `ssh2`         | Testcontainers              | Solo se usa para Docker remoto por SSH; su parte nativa es opcional |
+| `cpu-features` | `ssh2`                      | Optimización nativa opcional                                        |
+| `protobufjs`   | Testcontainers (transitiva) | No se usa directamente; las pruebas pasan sin su script             |
+
+Una instalación limpia (`pnpm install --frozen-lockfile`) ejecuta `pnpm check`, `pnpm build`, `pnpm test:integration` y `pnpm test:e2e` sin esos scripts; CI lo comprueba en cada cambio. Si una dependencia nueva necesita compilar, se autoriza en `allowBuilds` con una justificación en esta tabla.
+
+**TypeScript** está fijado en `6.0.3` exacto (`package.json` y `pnpm-lock.yaml`).
 
 **Decoradores en la API:** NestJS usa decoradores heredados (`experimentalDecorators`) sin `emitDecoratorMetadata`. Por eso cada dependencia se inyecta con `@Inject(TOKEN)` explícito.
 

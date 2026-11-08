@@ -15,27 +15,28 @@ Cada documento declara su estado al inicio:
 
 ## Índice
 
-| Área         | Documento                                                                                                 | Estado       |
-| ------------ | --------------------------------------------------------------------------------------------------------- | ------------ |
-| Versiones    | [versions/v1-scope.md](versions/v1-scope.md): alcance de la V1                                            | Aprobado     |
-| Versiones    | [versions/v2-boundary.md](versions/v2-boundary.md): frontera con la V2 (nómina)                           | Aprobado     |
-| Decisiones   | [adr/](adr/): registro de decisiones (plantilla en `0000-template.md`)                                    | Aprobado     |
-| Arquitectura | [architecture/conventions.md](architecture/conventions.md): convenciones de nombres y capas               | Aprobado     |
-| Arquitectura | [architecture/overview.md](architecture/overview.md): visión general de lo que existe                     | Implementado |
-| Arquitectura | [architecture/planned-design-v1.md](architecture/planned-design-v1.md): diseño de los pasos 1.0-b a 1.0-g | Planificado  |
-| Datos        | [data-model/README.md](data-model/README.md): tablas, RLS, restricciones y triggers                       | Implementado |
-| Reglas       | [business-rules/tenancy.md](business-rules/tenancy.md): aislamiento entre empresas                        | Implementado |
-| Reglas       | [business-rules/immutability.md](business-rules/immutability.md): marcaciones y auditoría inmutables      | Implementado |
-| Reglas       | [business-rules/audit.md](business-rules/audit.md): auditoría transaccional y acciones registradas        | Implementado |
-| API          | [api/README.md](api/README.md): contratos HTTP y errores                                                  | Implementado |
-| Seguridad    | [security/README.md](security/README.md): controles vigentes                                              | Implementado |
-| Seguridad    | [security/offline.md](security/offline.md): riesgos del registro sin conexión                             | Planificado  |
-| Desarrollo   | [development/onboarding.md](development/onboarding.md): guía de incorporación y comandos                  | Implementado |
-| Desarrollo   | [development/module-template.md](development/module-template.md): plantilla del README de módulo          | Aprobado     |
-| Operación    | [operations/local.md](operations/local.md): entorno local                                                 | Implementado |
-| Landing      | [landing.md](landing.md): landing pública en la raíz                                                      | Implementado |
-| Legal        | [legal-references.md](legal-references.md): inventario de referencias (contexto, no asesoría)             | Aprobado     |
-| Histórico    | [proposals/propuesta-tecnica-v1.md](proposals/propuesta-tecnica-v1.md): propuesta original                | Histórico    |
+| Área         | Documento                                                                                                     | Estado       |
+| ------------ | ------------------------------------------------------------------------------------------------------------- | ------------ |
+| Versiones    | [versions/v1-scope.md](versions/v1-scope.md): alcance de la V1                                                | Aprobado     |
+| Versiones    | [versions/v2-boundary.md](versions/v2-boundary.md): frontera con la V2 (nómina)                               | Aprobado     |
+| Decisiones   | [adr/](adr/): registro de decisiones (plantilla en `0000-template.md`)                                        | Aprobado     |
+| Arquitectura | [architecture/conventions.md](architecture/conventions.md): convenciones de nombres y capas                   | Aprobado     |
+| Arquitectura | [architecture/overview.md](architecture/overview.md): visión general de lo que existe                         | Implementado |
+| Arquitectura | [architecture/planned-design-v1.md](architecture/planned-design-v1.md): diseño de los pasos 1.0-b a 1.0-g     | Planificado  |
+| Datos        | [data-model/README.md](data-model/README.md): tablas, RLS, restricciones y triggers                           | Implementado |
+| Reglas       | [business-rules/tenancy.md](business-rules/tenancy.md): aislamiento entre empresas                            | Implementado |
+| Reglas       | [business-rules/immutability.md](business-rules/immutability.md): marcaciones y auditoría inmutables          | Implementado |
+| Reglas       | [business-rules/audit.md](business-rules/audit.md): auditoría transaccional y acciones registradas            | Implementado |
+| API          | [api/README.md](api/README.md): contratos HTTP y errores                                                      | Implementado |
+| Seguridad    | [security/README.md](security/README.md): controles vigentes                                                  | Implementado |
+| Seguridad    | [security/offline.md](security/offline.md): riesgos del registro sin conexión                                 | Planificado  |
+| Desarrollo   | [development/onboarding.md](development/onboarding.md): guía de incorporación y comandos                      | Implementado |
+| Desarrollo   | [development/module-template.md](development/module-template.md): plantilla del README de módulo              | Aprobado     |
+| Operación    | [operations/local.md](operations/local.md): entorno local                                                     | Implementado |
+| Operación    | [operations/emergency-changes.md](operations/emergency-changes.md): cambios de emergencia en datos inmutables | Aprobado     |
+| Landing      | [landing.md](landing.md): landing pública en la raíz                                                          | Implementado |
+| Legal        | [legal-references.md](legal-references.md): inventario de referencias (contexto, no asesoría)                 | Aprobado     |
+| Histórico    | [proposals/propuesta-tecnica-v1.md](proposals/propuesta-tecnica-v1.md): propuesta original                    | Histórico    |
 
 ## Estado de los módulos
 
@@ -66,3 +67,4 @@ Cada documento declara su estado al inicio:
 | [0010](adr/0010-time-and-language.md)                           | Manejo del tiempo e idioma                                       | Aceptado                      |
 | [0011](adr/0011-offline-ingest-and-idempotency.md)              | Ingesta sin conexión e idempotencia                              | Aceptado                      |
 | [0012](adr/0012-attendance-status-and-precedence.md)            | Cuatro estados y su precedencia                                  | Aceptado                      |
+| [0013](adr/0013-postgresql-18.md)                               | PostgreSQL 18 como versión oficial (mínima, desarrollo, CI)      | Aceptado                      |

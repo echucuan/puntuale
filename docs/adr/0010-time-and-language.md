@@ -32,6 +32,19 @@ Algunas jornadas cruzan la medianoche. México tiene varias zonas horarias, y lo
 - La fecha operativa de una jornada es la fecha local en que **empieza** el turno.
 - Los identificadores técnicos van en inglés; los textos de la interfaz, en español.
 
+## Revisión del 2026-11-08: fuente de la hora del servidor
+
+- **`received_at` es el momento en que el servidor recibe la marcación** y lo fija la base de datos con `statement_timestamp()`.
+- Nunca proviene del cliente: el contrato de entrada no lo acepta y lo descarta si llega.
+- La aplicación obtiene esa hora a través del puerto `ServerClock`.
+  - En producción, el único adaptador es `databaseClock`.
+  - Las pruebas pueden construir el caso de uso con un reloj fijo, para que el desfase sea determinista. Ningún módulo de Nest registra ese reloj.
+- **Lo que declara el dispositivo es evidencia, no una fuente confiable:**
+  - campos declarados: `declared_local_time`, `declared_utc_offset_minutes` y `declared_timezone`;
+  - campos derivados de la evidencia: `occurred_at_utc` y `device_sent_at`.
+  - Esos campos se guardan sin corregirlos.
+  - La diferencia con la hora del servidor queda en `clock_offset_seconds`.
+
 ## Consecuencias
 
 - Las consultas siempre indican en qué zona se interpreta la hora.

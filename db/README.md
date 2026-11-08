@@ -28,7 +28,7 @@ Esquema de la base de datos como migraciones SQL versionadas, el bootstrap del r
 
 1. **Dos conexiones.** La administrativa (`DATABASE_ADMIN_URL`) solo crea roles y migra. La API usa `DATABASE_URL` con `puntuale_app`.
 2. **RLS ENABLE + FORCE** en toda tabla con `tenant_id` (y en `tenant`). `app_current_tenant()` devuelve `NULL` sin contexto o con un valor que no es UUID, y la consulta devuelve 0 filas sin error (ADR 0003).
-3. **Solo inserción** en `attendance_event` y `audit_event`: el rol no tiene `UPDATE`/`DELETE` y un trigger rechaza `UPDATE`, `DELETE` y `TRUNCATE` incluso al dueño (ADR 0004, ADR 0005).
+3. **Solo inserción** en `attendance_event` y `audit_event`: el rol no tiene `UPDATE`/`DELETE` y un trigger rechaza `UPDATE`, `DELETE` y `TRUNCATE` de cualquier rol en el flujo normal (ADR 0004, ADR 0005). Un superusuario podría desactivar el trigger a propósito: eso solo se admite con el [procedimiento de emergencia](../docs/operations/emergency-changes.md).
 4. **`tenant_id` no cambia** en las tablas que admiten `UPDATE` (trigger `reject_tenant_change`).
 5. **Llaves foráneas compuestas** `(tenant_id, x_id)` entre tablas con tenant.
 6. El checksum de una migración ignora el fin de línea (`CRLF`/`LF`).

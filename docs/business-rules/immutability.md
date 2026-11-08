@@ -7,7 +7,10 @@
 1. `attendance_event` y `audit_event` **solo aceptan inserciones**.
 2. Hay dos barreras:
    - el rol de aplicación solo tiene `SELECT` e `INSERT` (un intento de `UPDATE`, `DELETE` o `TRUNCATE` da `42501`);
-   - un trigger (`reject_mutation()`) rechaza `UPDATE`, `DELETE` y `TRUNCATE` **incluso con la conexión administrativa**.
+   - un trigger (`reject_mutation()`) rechaza `UPDATE`, `DELETE` y `TRUNCATE` de cualquier rol, incluida la conexión administrativa ordinaria, para que nadie los haga **por accidente**.
+
+   **Alcance de la garantía.** No es una inmutabilidad absoluta: en PostgreSQL, un superusuario puede desactivar triggers o permisos de forma deliberada. Esa operación queda fuera del flujo normal y solo se admite con el [procedimiento de emergencia](../operations/emergency-changes.md).
+
 3. Una corrección crea un evento nuevo con `source = 'correction'` y, si reemplaza a otro, `supersedes_event_id`. La marcación vigente se calcula; nunca se marca la original. (El flujo de correcciones llega en 1.0-e.)
 4. Una marcación sincronizada dos veces no se duplica: la idempotencia por `client_event_id` está en [ADR 0011](../adr/0011-offline-ingest-and-idempotency.md).
 

@@ -35,6 +35,15 @@ Los colaboradores pueden registrar su asistencia sin conexión. El mismo evento 
   - en el servidor, el evento existe a partir de `received_at`, con su `ingest_mode` (`online` u `offline_sync`).
 - Los riesgos de manipulación del reloj y de IndexedDB están descritos en [`docs/security/offline.md`](../security/offline.md).
 
+## Revisión del 2026-11-08 (revisión arquitectónica de 1.0-a)
+
+- **`client_event_id` es obligatorio en toda marcación de la PWA**, tanto en línea como sin conexión. Lo exigen el contrato (`AttendanceEventEvidenceSchema`) y el CHECK `attendance_event_pwa_shape`.
+- **Un `duplicate` no se audita:** no cambia datos. Se devuelve el evento original.
+- **Un `conflict` se rechaza:** no sobrescribe nada y se audita como `time_tracking.attendance_event.rejected`, con `reason = 'client_event_id_conflict'` y el hash recibido. El evento guardado no cambia.
+- **El hash cubre solo la evidencia.** Un reintento con otro `deviceSentAt` u otro `ingestMode` es `duplicate`, no `conflict`.
+- **`received_at` lo fija la base de datos** (`statement_timestamp()`), nunca el dispositivo. El contrato de entrada no tiene ese campo y descarta cualquier campo desconocido ([ADR 0010](0010-time-and-language.md)).
+- **`CLOCK_SKEW` en 1.0-a:** el caso de uso calcula y conserva `clock_offset_seconds`, clasifica el desfase (`DEVICE_CLOCK_OFFSET`, `FUTURE_EVENT`) y devuelve esa clasificación, pero no la persiste ni rechaza el evento. La alerta persistida llega en 1.0-d.
+
 ## Consecuencias
 
 - Reintentar un envío es seguro.

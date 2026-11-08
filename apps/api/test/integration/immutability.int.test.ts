@@ -47,7 +47,7 @@ describe.each(Object.keys(STATEMENTS) as (keyof typeof STATEMENTS)[])('%s', (tab
   );
 
   it.each(['update', 'delete', 'truncate'] as const)(
-    'el trigger rechaza %s incluso con la conexión administrativa',
+    'el trigger rechaza %s de la conexión administrativa (protección contra errores, no contra un bypass deliberado)',
     async (op) => {
       await expect(db.adminPool.query(STATEMENTS[table][op])).rejects.toThrow(
         /solo acepta inserciones/,
