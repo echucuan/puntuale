@@ -75,7 +75,14 @@ async function asRlsProbe<T>(tenantId: string, work: (client: PoolClient) => Pro
   }
 }
 
-const TENANT_TABLES = ['tenant', 'employee', 'user_tenant', 'attendance_event', 'audit_event'];
+const TENANT_TABLES = [
+  'tenant',
+  'employee',
+  'user_tenant',
+  'membership_role',
+  'attendance_event',
+  'audit_event',
+];
 
 async function countVisible(client: PoolClient): Promise<Record<string, number>> {
   const counts: Record<string, number> = {};

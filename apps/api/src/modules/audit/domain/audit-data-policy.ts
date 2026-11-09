@@ -31,6 +31,8 @@ export const AUDITABLE_FIELDS = {
     'incomingPayloadHash',
   ],
   employee: ['id', 'tenantId', 'employeeNumber', 'displayName', 'status'],
+  user_tenant: ['id', 'tenantId', 'userId', 'employeeId', 'status'],
+  membership_role: ['id', 'tenantId', 'membershipId', 'role', 'scopeType'],
 } as const satisfies Record<string, readonly string[]>;
 
 export type AuditableEntityType = keyof typeof AUDITABLE_FIELDS;

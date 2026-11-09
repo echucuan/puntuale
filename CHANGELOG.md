@@ -7,6 +7,8 @@ Todos los cambios relevantes del proyecto se registran aquí. El formato se basa
 ### Agregado
 
 - Migración `0004_access_control_mfa`: `role`, `permission`, `role_permission`, `membership_role`, `user_mfa`, `mfa_recovery_code`, `mfa_attempt`, `auth_session.mfa_verified_at` y sus funciones `SECURITY DEFINER`.
+- Consulta y selección de empresa, identidad propia por empresa, vista de accesos, asignación y retiro de roles, activación y desactivación de membresías, con auditoría en la misma transacción.
+- `PermissionGuard` con denegación predeterminada y permisos de módulos futuros reservados.
 - MFA TOTP con secreto cifrado, protección contra reutilización, códigos de recuperación de un solo uso, límite de intentos y reautenticación para reemplazar o desactivar.
 - La semilla crea una empresa piloto ficticia, dos colaboradores y una cuenta administradora separada.
 
@@ -15,6 +17,7 @@ Todos los cambios relevantes del proyecto se registran aquí. El formato se basa
 - La configuración exige `MFA_ENCRYPTION_KEY`.
 - `puntuale_app` solo puede actualizar `status` en `user_tenant`.
 - `GET /api/auth/session` incluye `session.mfaVerified`.
+- El último propietario protegido debe tener membresía activa, rol vigente y credencial activa (migración `0005_effective_owner_guard`).
 
 ## 1.0-b.1 Sesiones y protecciones HTTP
 
