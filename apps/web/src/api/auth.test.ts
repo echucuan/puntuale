@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { authFailureMessage, createAuthApi } from './auth';
+import { authFailureMessage, createAuthApi, formatWait, toFormFeedback } from './auth';
 
 const SESSION = {
   user: {
@@ -76,7 +76,41 @@ describe('createAuthApi', () => {
   });
 });
 
+describe('toFormFeedback', () => {
+  it('convierte el límite con Retry-After en una espera', () => {
+    expect(toFormFeedback({ code: 'rate_limited', retryAfterSeconds: 12 })).toMatchObject({
+      kind: 'wait',
+      retryAfterSeconds: 12,
+    });
+  });
+
+  it('sin Retry-After muestra un error, porque no hay plazo que contar', () => {
+    expect(toFormFeedback({ code: 'rate_limited', retryAfterSeconds: null }).kind).toBe('error');
+  });
+
+  it('muestra un mensaje específico para un cuerpo demasiado grande', () => {
+    expect(toFormFeedback({ code: 'payload_too_large', retryAfterSeconds: null })).toEqual({
+      kind: 'error',
+      message: 'Los datos enviados son demasiado grandes. Revísalos e inténtalo de nuevo.',
+    });
+  });
+});
+
+describe('formatWait', () => {
+  it.each([
+    [45, '45 s'],
+    [60, '1 min'],
+    [125, '2 min 5 s'],
+  ])('%i segundos se muestran como %s', (seconds, expected) => {
+    expect(formatWait(seconds)).toBe(expected);
+  });
+});
+
 describe('authFailureMessage', () => {
+  it('explica el conflicto de una sesión ya renovada', () => {
+    expect(authFailureMessage({ code: 'conflict', retryAfterSeconds: null })).toContain('renovó');
+  });
+
   it('incluye la espera cuando existe', () => {
     expect(authFailureMessage({ code: 'rate_limited', retryAfterSeconds: 8 })).toContain('8 s');
   });

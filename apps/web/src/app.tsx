@@ -1,9 +1,10 @@
 import type { CurrentSessionResponse } from '@puntuale/contracts';
-import { useCallback, useEffect, useState } from 'react';
-import { type AuthApi, authFailureMessage, createAuthApi } from './api/auth';
-import { fetchHealth, HEALTH_LABELS_ES, type HealthView } from './api/health';
-import { LoginForm } from './auth/login-form';
-import { SessionPanel } from './auth/session-panel';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { AccountPage } from './account/account-page';
+import { type AuthApi, createAuthApi, type FormFeedback, toFormFeedback } from './api/auth';
+import { fetchHealth, type HealthView } from './api/health';
+import { LoginPage } from './auth/login-page';
+import { BrandLogo } from './components/brand-logo';
 
 const authApi: AuthApi = createAuthApi();
 
@@ -12,12 +13,13 @@ type AuthView =
   | { state: 'anonymous' }
   | { state: 'signed-in'; current: CurrentSessionResponse };
 
-/** Pantalla de 1.0-b.1: estado de la API, acceso y sesiones. Sin reglas de negocio. */
+/** Acceso y «Mi cuenta» de 1.0-b.1. Sin reglas de negocio. */
 export function App() {
   const [health, setHealth] = useState<HealthView>({ state: 'loading' });
   const [auth, setAuth] = useState<AuthView>({ state: 'loading' });
-  const [loginError, setLoginError] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<FormFeedback | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const previousState = useRef<AuthView['state']>('loading');
 
   useEffect(() => {
     let active = true;
@@ -33,53 +35,55 @@ export function App() {
     };
   }, []);
 
+  // Al cambiar de pantalla tras una acción, el foco pasa a su título.
+  useEffect(() => {
+    if (previousState.current !== 'loading' && previousState.current !== auth.state) {
+      document.querySelector<HTMLElement>('[data-page-heading]')?.focus();
+    }
+    previousState.current = auth.state;
+  }, [auth.state]);
+
   const onChanged = useCallback((current: CurrentSessionResponse) => {
     setAuth({ state: 'signed-in', current });
   }, []);
 
   const onEnded = useCallback((message: string | null) => {
     setNotice(message);
-    setLoginError(null);
+    setFeedback(null);
     setAuth({ state: 'anonymous' });
   }, []);
 
   async function login(credentials: { email: string; password: string }) {
+    setFeedback(null);
     const result = await authApi.login(credentials);
+    setNotice(null);
     if (result.ok) {
-      setLoginError(null);
-      setNotice(null);
       setAuth({ state: 'signed-in', current: result.value });
     } else {
-      setNotice(null);
-      setLoginError(authFailureMessage(result.failure));
+      setFeedback(toFormFeedback(result.failure));
     }
   }
 
+  if (auth.state === 'loading') {
+    return (
+      <main className="pt-splash">
+        <BrandLogo className="pt-logo--large" />
+        <p role="status">Cargando…</p>
+      </main>
+    );
+  }
+
+  if (auth.state === 'anonymous') {
+    return <LoginPage health={health} notice={notice} feedback={feedback} onSubmit={login} />;
+  }
+
   return (
-    <main className="pt-shell">
-      <header className="pt-header">
-        <span className="pt-wordmark">Puntuale</span>
-        <span className="pt-badge">1.0-b.1 · en construcción</span>
-      </header>
-      <section className="pt-card" aria-live="polite">
-        <h1>Control de asistencia</h1>
-        <p className={`pt-status pt-status--${health.state}`}>{HEALTH_LABELS_ES[health.state]}</p>
-      </section>
-      {auth.state === 'anonymous' && (
-        <section className="pt-card">
-          <h2>Iniciar sesión</h2>
-          {notice && <p className="pt-notice">{notice}</p>}
-          <LoginForm submitLabel="Entrar" error={loginError} onSubmit={login} />
-        </section>
-      )}
-      {auth.state === 'signed-in' && (
-        <SessionPanel
-          api={authApi}
-          current={auth.current}
-          onChanged={onChanged}
-          onEnded={onEnded}
-        />
-      )}
-    </main>
+    <AccountPage
+      api={authApi}
+      health={health}
+      current={auth.current}
+      onChanged={onChanged}
+      onEnded={onEnded}
+    />
   );
 }

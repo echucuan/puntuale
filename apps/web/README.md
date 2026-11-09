@@ -1,10 +1,10 @@
 # `@puntuale/web`
 
-> **Estado: Parcial (1.0-a).** Solo existe la pantalla base con la marca y el estado de la API. Las pantallas de producto y la PWA de marcación llegan desde 1.0-b.
+> **Estado: Parcial (1.0-b.1).** Existen la pantalla de acceso y «Mi cuenta», con la gestión de sesiones. Las pantallas de asistencia y la PWA de marcación llegan en versiones posteriores.
 
 ## Propósito
 
-Interfaz web de Puntuale (React 19 + Vite 8), con la identidad visual de la landing.
+Interfaz web de Puntuale (React 19 + Vite 8), con la identidad visual del kit y de la landing.
 
 ## Responsabilidades
 
@@ -19,15 +19,28 @@ Interfaz web de Puntuale (React 19 + Vite 8), con la identidad visual de la land
 | `@puntuale/ui`        | Tokens de marca (`--pt-*`)  |
 | API (`pnpm dev`)      | Proxy de `/health` y `/api` |
 
+## Marca
+
+- `public/brand/logo.png` e `isotipo.png` son copias sin cambios de los originales de la landing y del kit. No se redibujan, recolorean ni deforman.
+- El logo solo va sobre fondos claros: el kit define versiones monocromáticas para fondos oscuros, pero no existen como archivo.
+- `.pt-logo` completa el área de protección del kit (X = altura de la «P»), proporcional al ancho, y conserva el tamaño mínimo digital.
+- Los identificadores técnicos, la IP y el agente de usuario completo van en «Detalles técnicos». El estado de la API y la subversión son secundarios.
+- El azul real del PNG (≈ `#0050BE`) y su texto (≈ `#25272A`) difieren de los tokens del kit (`#1769AA` y `#202124`). La diferencia se conserva: el logo original no se recolorea.
+- Montserrat se usa solo si está instalada: la aplicación no descarga fuentes externas (`@puntuale/ui`).
+
 ## Entradas y salidas
 
-| Llamada       | Contrato               |
-| ------------- | ---------------------- |
-| `GET /health` | `HealthResponseSchema` |
+| Llamada                                                                                   | Contrato                                        |
+| ----------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| `GET /health`                                                                             | `HealthResponseSchema`                          |
+| `GET /api/auth/csrf`, `POST /api/auth/login`, `POST /api/auth/logout`                     | Contratos de `auth.ts` en `@puntuale/contracts` |
+| `GET /api/auth/session`, `GET /api/auth/sessions`, `DELETE /api/auth/sessions/:sessionId` | Contratos de `auth.ts` en `@puntuale/contracts` |
 
 ## Pruebas relacionadas
 
-`src/api/health.test.ts`: traducción de la respuesta de salud y falla de red.
+- `src/api/health.test.ts`: traducción de la respuesta de salud y falla de red.
+- `src/api/auth.test.ts`: cliente de sesión, mensajes de error, espera por demasiados intentos y formato del tiempo restante.
+- `src/auth/device-label.test.ts`: nombre orientativo del dispositivo.
 
 ## Cómo extenderlo
 

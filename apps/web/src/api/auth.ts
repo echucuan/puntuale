@@ -132,9 +132,35 @@ export function authFailureMessage(failure: AuthFailure): string {
       return 'Tu sesión terminó. Inicia sesión de nuevo.';
     case 'not_found':
       return 'Esa sesión ya no existe.';
+    case 'conflict':
+      return 'Tu sesión ya se renovó en otra solicitud. Recarga la página.';
+    case 'payload_too_large':
+      return 'Los datos enviados son demasiado grandes. Revísalos e inténtalo de nuevo.';
     case 'unreachable':
       return 'No se pudo contactar a la API.';
     default:
       return 'Ocurrió un error inesperado.';
   }
+}
+
+/** Respuesta visible de un formulario de acceso. `wait` bloquea el envío durante la espera. */
+export type FormFeedback =
+  { kind: 'error'; message: string } | { kind: 'wait'; message: string; retryAfterSeconds: number };
+
+export function toFormFeedback(failure: AuthFailure): FormFeedback {
+  if (failure.code === 'rate_limited' && failure.retryAfterSeconds !== null) {
+    return {
+      kind: 'wait',
+      message: 'Por seguridad, espera antes de volver a intentarlo.',
+      retryAfterSeconds: failure.retryAfterSeconds,
+    };
+  }
+  return { kind: 'error', message: authFailureMessage(failure) };
+}
+
+/** Tiempo restante legible: `45 s`, `2 min 5 s`. */
+export function formatWait(seconds: number): string {
+  if (seconds < 60) return `${seconds} s`;
+  const rest = seconds % 60;
+  return rest === 0 ? `${seconds / 60} min` : `${Math.floor(seconds / 60)} min ${rest} s`;
 }
