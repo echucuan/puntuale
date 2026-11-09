@@ -641,3 +641,274 @@ code {
     align-items: stretch;
   }
 }
+
+/* Navegación principal */
+.pt-nav {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.pt-nav ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pt-nav a {
+  display: inline-block;
+  padding: 10px 2px;
+  border-bottom: 3px solid transparent;
+  color: var(--pt-blue);
+  font-size: 0.9rem;
+  font-weight: var(--pt-weight-semibold);
+  text-decoration: none;
+}
+
+.pt-nav a:hover {
+  border-bottom-color: var(--pt-line);
+}
+
+.pt-nav a[aria-current='page'] {
+  border-bottom-color: var(--pt-blue);
+  color: var(--pt-navy);
+}
+
+/* Empresas y accesos */
+.pt-list {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pt-card h2,
+.pt-tenant h2,
+.pt-member h2 {
+  font-size: 1.05rem;
+}
+
+.pt-tenant {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.pt-tenant-info {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.pt-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pt-tag--muted {
+  background: var(--pt-gray);
+  color: var(--pt-muted);
+}
+
+.pt-note {
+  color: var(--pt-muted);
+}
+
+.pt-lead--flush {
+  margin-top: -8px;
+}
+
+.pt-card--attention {
+  padding-left: 17px;
+  border-left: 4px solid var(--pt-warning);
+}
+
+.pt-plain-list {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.pt-member-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.pt-roles {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pt-roles li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  border-top: 1px solid var(--pt-line);
+}
+
+.pt-member-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.pt-assign {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.pt-assign label {
+  flex-basis: 100%;
+  color: var(--pt-navy);
+  font-size: 0.9rem;
+  font-weight: var(--pt-weight-semibold);
+}
+
+.pt-assign select {
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--pt-control);
+  border-radius: var(--pt-radius-sm);
+  background: var(--pt-white);
+  color: var(--pt-ink);
+  font: inherit;
+}
+
+select:focus-visible {
+  outline: 3px solid var(--pt-blue);
+  outline-offset: 2px;
+}
+
+.pt-link-button {
+  justify-self: start;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--pt-blue);
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: var(--pt-weight-semibold);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.pt-link-button--danger {
+  color: var(--pt-danger);
+}
+
+.pt-link-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.pt-link-button:focus-visible {
+  outline: 3px solid var(--pt-blue);
+  outline-offset: 2px;
+}
+
+.pt-button--link {
+  justify-self: start;
+  text-decoration: none;
+}
+
+/* Verificación en dos pasos */
+.pt-enroll {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.pt-enroll-steps {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.pt-qr {
+  display: block;
+  width: 100%;
+  max-width: 200px;
+  height: auto;
+  border: 1px solid var(--pt-line);
+  border-radius: var(--pt-radius-sm);
+}
+
+.pt-secret {
+  padding: 8px 10px;
+  border-radius: var(--pt-radius-sm);
+  background: var(--pt-gray);
+  letter-spacing: 0.04em;
+}
+
+.pt-code-input {
+  max-width: 260px;
+  font-family: Consolas, 'Courier New', monospace;
+  letter-spacing: 0.08em;
+}
+
+.pt-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pt-codes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 16px;
+  margin: 0;
+  padding: 12px;
+  border-radius: var(--pt-radius-sm);
+  background: var(--pt-gray);
+  list-style: none;
+}
+
+.pt-card .pt-button--secondary {
+  justify-self: start;
+}
+
+.pt-form--narrow {
+  max-width: 400px;
+}
+
+.pt-form--narrow .pt-button {
+  justify-self: start;
+}
+
+@media (max-width: 560px) {
+  .pt-tenant {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .pt-enroll {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pt-member-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .pt-assign select {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+}

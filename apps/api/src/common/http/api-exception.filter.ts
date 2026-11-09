@@ -31,6 +31,12 @@ const MESSAGE_BY_CODE: Record<ApiErrorCode, string> = {
   forbidden: 'La solicitud fue rechazada por seguridad.',
   rate_limited: 'Demasiados intentos. Espera un momento e inténtalo de nuevo.',
   payload_too_large: 'La solicitud es demasiado grande.',
+  permission_denied: 'No tienes permiso para esta acción.',
+  mfa_required: 'Completa la verificación en dos pasos para continuar.',
+  mfa_enrollment_required: 'Configura la verificación en dos pasos para continuar.',
+  invalid_mfa_code: 'El código no es válido.',
+  last_admin: 'La empresa debe conservar al menos una persona propietaria con acceso activo.',
+  self_modification: 'No puedes cambiar tu propio acceso.',
 };
 
 /**

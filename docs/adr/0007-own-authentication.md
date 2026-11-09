@@ -1,7 +1,7 @@
 # ADR 0007 · Autenticación propia con sesiones en el servidor
 
 - **Fecha:** 2026-11-07
-- **Estado:** Aceptado. Implementado en parte en 1.0-b.1 ([ADR 0014](0014-postgres-sessions-and-login.md)); el MFA llega en 1.0-b.2.
+- **Estado:** Aceptado. Implementado: sesiones en 1.0-b.1 ([ADR 0014](0014-postgres-sessions-and-login.md)) y MFA en 1.0-b.2 ([ADR 0015](0015-access-control-and-mfa.md)).
 
 ## Contexto
 

@@ -24,6 +24,12 @@ export function testConfig(
         delayMaxMs: 30_000,
       },
       api: { perIpPerMinute: 100_000, perSessionPerMinute: 100_000 },
+      mfa: {
+        encryptionKey: 'llave-mfa-ficticia-de-pruebas-0123456789',
+        maxAttempts: 5,
+        windowSeconds: 900,
+        enrollmentTtlSeconds: 900,
+      },
       ...overrides,
     },
   };

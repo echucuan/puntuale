@@ -31,6 +31,7 @@ interface IdentityRow {
   last_activity_at: Date;
   idle_expires_at: Date;
   expires_at: Date;
+  mfa_verified_at: Date | null;
 }
 
 function toRecord(row: IdentityRow): ActiveSessionRecord {
@@ -43,6 +44,7 @@ function toRecord(row: IdentityRow): ActiveSessionRecord {
     lastActivityAt: row.last_activity_at,
     idleExpiresAt: row.idle_expires_at,
     expiresAt: row.expires_at,
+    mfaVerifiedAt: row.mfa_verified_at,
   };
 }
 

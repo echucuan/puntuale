@@ -1,6 +1,6 @@
 # Módulo `identity`
 
-> **Estado: Parcial (1.0-b.1).** Existen login, logout, sesiones en PostgreSQL, rotación, revocación, CSRF y límites de tasa. Las membresías por usuario, el cambio de empresa, los roles, los permisos y el MFA llegan en 1.0-b.2.
+> **Estado: Implementado (1.0-b.2).** Login, logout, sesiones en PostgreSQL, rotación, revocación, CSRF, límites de tasa y MFA TOTP ([ADR 0015](../../../../../docs/adr/0015-access-control-and-mfa.md)). Membresías, roles y permisos están en `tenancy`.
 
 ## Propósito
 
@@ -14,7 +14,9 @@ Autenticar a una persona y mantener su sesión de forma segura, sin que el rol d
 - `CsrfGuard` y `RateLimitGuard`: guards globales de todas las rutas `/api/`.
 - Registra los eventos de `security_event` en la misma transacción que el cambio.
 - **No** decide a qué empresa pertenece una persona: eso es de `tenancy`.
-- **No** gestiona roles, permisos ni MFA (1.0-b.2).
+- `MfaService`: inscripción, verificación, recuperación, reemplazo y desactivación del segundo factor.
+- `CookieSessionMfaResolver`: informa a `tenancy` el estado de MFA de la sesión.
+- **No** gestiona roles ni permisos: eso es de `tenancy`.
 
 ## Dependencias
 
@@ -25,6 +27,8 @@ Autenticar a una persona y mantener su sesión de forma segura, sin que el rol d
 | `tenancy` (puerto `SessionResolver`)                                                                                                        | Entregar la sesión a `TenantGuard`            |
 | `@puntuale/contracts`                                                                                                                       | `auth.ts`: esquemas de entrada y salida       |
 | `@node-rs/argon2`                                                                                                                           | Argon2id                                      |
+| `otpauth`                                                                                                                                   | Códigos TOTP                                  |
+| Tablas `user_mfa`, `mfa_recovery_code`, `mfa_attempt`                                                                                       | Segundo factor                                |
 | Tablas `auth_session`, `security_event`, `login_failure_account`, `login_failure_ip`, `rate_limit_bucket`                                   | Estado propio                                 |
 | Funciones `auth_find_account`, `auth_session_identity`, `auth_clear_login_failures`, `auth_release_login_ip_attempt`, `auth_purge_throttle` | Acceso controlado a `app_user` y credenciales |
 
@@ -44,20 +48,27 @@ Todas están en el ADR 0014.
 10. **Mínimo privilegio.** `puntuale_app` no lee `app_user` ni `app_user_credential` (`auth-schema.int.test.ts`).
 11. **Sin atajos.** `src/` no contiene ningún resolvedor que acepte identidades sin verificar (`session-resolver.test.ts`).
 12. **El hash Argon2id no sale de la API.** Se recibe internamente solo para verificar la contraseña; nunca se envía al navegador, se registra ni se audita (`auth.e2e.test.ts`).
-13. **Sin recuperación de sesión.** Una sesión expirada o revocada requiere iniciar sesión nuevamente (`auth.e2e.test.ts`). La recuperación de MFA es un flujo diferente, reservado para 1.0-b.2.
+13. **Sin recuperación de sesión.** Una sesión expirada o revocada requiere iniciar sesión nuevamente (`auth.e2e.test.ts`). La recuperación de MFA es un flujo diferente.
+14. **Secreto TOTP cifrado.** AES-256-GCM ligado a la persona; nunca se registra (`mfa.test.ts`, `access-mfa.e2e.test.ts`).
+15. **Un código no se reutiliza.** El paso aceptado solo avanza, bajo bloqueo por persona (`access-mfa.e2e.test.ts`).
+16. **Códigos de recuperación** como HMAC y de un solo uso, con consumo atómico (`access-mfa.e2e.test.ts`).
+17. **Límite compartido.** Verificación, recuperación y reautenticación: 5 intentos en 15 minutos por persona, configurable (`access-mfa.e2e.test.ts`).
+18. **Deshabilitar credenciales.** Hoy no existe esa operación. Si se agrega, debe respetar la garantía del último propietario con acceso efectivo de cada empresa (ADR 0015).
+19. **Reautenticación.** Reemplazar o desactivar exige contraseña y factor actual; una sesión nueva o rotada empieza sin verificar (`access-mfa.e2e.test.ts`).
 
 ## Entradas y salidas
 
-| Tipo            | Nombre                                                                           | Contrato                                              |
-| --------------- | -------------------------------------------------------------------------------- | ----------------------------------------------------- |
-| Endpoint        | `GET /api/auth/csrf`                                                             | `CsrfResponseSchema`                                  |
-| Endpoint        | `POST /api/auth/login`                                                           | `LoginRequestSchema` → `CurrentSessionResponseSchema` |
-| Endpoint        | `POST /api/auth/logout`                                                          | 204                                                   |
-| Endpoint        | `GET /api/auth/session`                                                          | `CurrentSessionResponseSchema`                        |
-| Endpoint        | `GET /api/auth/sessions`                                                         | `ActiveSessionsResponseSchema`                        |
-| Endpoint        | `DELETE /api/auth/sessions/:sessionId`                                           | 204                                                   |
-| Evento emitido  | No aplica: aún no hay bus de eventos                                             |                                                       |
-| Acción auditada | `security_event`: `login_succeeded`, `login_failed`, `logout`, `session_revoked` | Global; no usa `audit_event`                          |
+| Tipo            | Nombre                                                                       | Contrato                                              |
+| --------------- | ---------------------------------------------------------------------------- | ----------------------------------------------------- |
+| Endpoint        | `GET /api/auth/csrf`                                                         | `CsrfResponseSchema`                                  |
+| Endpoint        | `POST /api/auth/login`                                                       | `LoginRequestSchema` → `CurrentSessionResponseSchema` |
+| Endpoint        | `POST /api/auth/logout`                                                      | 204                                                   |
+| Endpoint        | `GET /api/auth/session`                                                      | `CurrentSessionResponseSchema`                        |
+| Endpoint        | `GET /api/auth/sessions`                                                     | `ActiveSessionsResponseSchema`                        |
+| Endpoint        | `DELETE /api/auth/sessions/:sessionId`                                       | 204                                                   |
+| Endpoint        | `/api/auth/mfa`, `/enrollment`, `/enrollment/confirm`, `/verify`, `/disable` | `access.ts`                                           |
+| Evento emitido  | No aplica: aún no hay bus de eventos                                         |                                                       |
+| Acción auditada | `security_event`: login, logout, sesiones y `mfa_*`                          | Global; no usa `audit_event`                          |
 
 ## Pruebas relacionadas
 
@@ -69,6 +80,8 @@ Todas están en el ADR 0014.
 | `src/config/app-config.test.ts`               | Secreto y orígenes por entorno                                                                |
 | `db/test/integration/auth-schema.int.test.ts` | `SECURITY DEFINER`, permisos, `security_event` de solo inserción y restricciones              |
 | `test/e2e/auth.e2e.test.ts`                   | Login, cookies, expiración, rotación, revocación, CSRF, CORS, Helmet y límites de tasa        |
+| `domain/mfa.test.ts`                          | Cifrado del secreto, ventana TOTP y códigos de recuperación                                   |
+| `test/e2e/access-mfa.e2e.test.ts`             | Inscripción, reutilización, recuperación, límites, reautenticación y ausencia de secretos     |
 | `test/e2e/auth-concurrency.e2e.test.ts`       | Dos instancias: límites exactos, reintentos, historial de IP y contrato de rotación           |
 | `test/integration/login-throttle.int.test.ts` | Bloqueos entre conexiones, orden fijo y ausencia de interbloqueos                             |
 

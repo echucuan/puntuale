@@ -6,15 +6,15 @@
 
 ## 1. Módulos y pasos de entrega
 
-| Paso  | Módulos                                                                                                    |
-| ----- | ---------------------------------------------------------------------------------------------------------- |
-| 1.0-a | Base del monorepo, `tenancy` (contexto), `audit`, persistencia de `attendance_event`                       |
-| 1.0-b | `identity`: autenticación, roles, permisos, `ScopePolicy`, `GET /api/me/tenants`; incorporación de Drizzle |
-| 1.0-c | `employees`, `schedules` (horarios versionados, festivos, excepciones), `period-calendars`                 |
-| 1.0-d | `time-tracking` (endpoint de ingesta, PWA, cola sin conexión), `workdays` (`buildWorkday`), `review_flag`  |
-| 1.0-e | `periods`: periodos, cierre versionado, conformidad, reapertura                                            |
-| 1.0-f | `incidents`, `clarifications`, `corrections`                                                               |
-| 1.0-g | `reports`: reportes de asistencia e incidencias, exportación                                               |
+| Paso  | Módulos                                                                                                                                                                                                                                                    |
+| ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1.0-a | Base del monorepo, `tenancy` (contexto), `audit`, persistencia de `attendance_event`                                                                                                                                                                       |
+| 1.0-b | `identity`: autenticación, roles, permisos, `ScopePolicy`, `GET /api/me/tenants`. Drizzle se difiere: el acceso sigue con `pg` y SQL parametrizado hasta que el volumen de consultas lo justifique ([ADR 0002](../adr/0002-modular-monolith-and-stack.md)) |
+| 1.0-c | `employees`, `schedules` (horarios versionados, festivos, excepciones), `period-calendars`                                                                                                                                                                 |
+| 1.0-d | `time-tracking` (endpoint de ingesta, PWA, cola sin conexión), `workdays` (`buildWorkday`), `review_flag`                                                                                                                                                  |
+| 1.0-e | `periods`: periodos, cierre versionado, conformidad, reapertura                                                                                                                                                                                            |
+| 1.0-f | `incidents`, `clarifications`, `corrections`                                                                                                                                                                                                               |
+| 1.0-g | `reports`: reportes de asistencia e incidencias, exportación                                                                                                                                                                                               |
 
 ## 2. Calendarios y periodos
 
@@ -197,6 +197,6 @@ Ver [ADR 0011](../adr/0011-offline-ingest-and-idempotency.md) y [`../security/of
 ## 11. Identidad y permisos (1.0-b)
 
 - **`app_user`:** `email` de tipo `citext`, `password_hash` (Argon2id), `mfa_secret` (cifrado) y `status`.
-- **Roles y permisos:** `role` por tenant (se siembran roles de sistema), `permission` global, `role_permission` y `membership_role` con alcance (`scope_type` y `scope_id`: empresa, centro o área).
-- **`ScopePolicy`:** decide qué colaboradores puede ver cada usuario según su alcance. Tendrá pruebas.
+- **Roles y permisos:** implementado en 1.0-b.2 con un catálogo global y cerrado y solo alcance de empresa ([ADR 0015](../adr/0015-access-control-and-mfa.md)). El alcance por centro o área sigue planificado.
+- **`ScopePolicy`:** decidirá qué colaboradores puede ver cada usuario según su alcance. Depende de las entidades de centro y área, que aún no existen.
 - **`user_tenant.employee_id`:** vincula la identidad del usuario con un colaborador para el autoservicio. **No otorga ningún rol.**

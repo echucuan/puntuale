@@ -40,17 +40,17 @@ Cada documento declara su estado al inicio:
 
 ## Estado de los módulos
 
-| Módulo                                                 | Paso    | Estado                                 |
-| ------------------------------------------------------ | ------- | -------------------------------------- |
-| Base del monorepo (contratos, reglas, db, api, web)    | 1.0-a   | Implementado (pendiente de aceptación) |
-| `tenancy`, `audit`, persistencia de `attendance_event` | 1.0-a   | Implementado (pendiente de aceptación) |
-| `identity` (sesiones, login, CSRF, límites)            | 1.0-b.1 | Implementado (pendiente de aceptación) |
-| `identity` (membresías, roles, permisos, MFA)          | 1.0-b.2 | Planificado                            |
-| `employees`, `schedules`, `period-calendars`           | 1.0-c   | Planificado                            |
-| `time-tracking` (ingesta, PWA), `workdays`             | 1.0-d   | Planificado                            |
-| `periods` (cierre, conformidad, reapertura)            | 1.0-e   | Planificado                            |
-| `incidents`, `clarifications`, `corrections`           | 1.0-f   | Planificado                            |
-| `reports`                                              | 1.0-g   | Planificado                            |
+| Módulo                                                    | Paso    | Estado                                 |
+| --------------------------------------------------------- | ------- | -------------------------------------- |
+| Base del monorepo (contratos, reglas, db, api, web)       | 1.0-a   | Implementado (pendiente de aceptación) |
+| `tenancy`, `audit`, persistencia de `attendance_event`    | 1.0-a   | Implementado (pendiente de aceptación) |
+| `identity` (sesiones, login, CSRF, límites)               | 1.0-b.1 | Implementado (pendiente de aceptación) |
+| `identity` y `tenancy` (membresías, roles, permisos, MFA) | 1.0-b.2 | Implementado                           |
+| `employees`, `schedules`, `period-calendars`              | 1.0-c   | Planificado                            |
+| `time-tracking` (ingesta, PWA), `workdays`                | 1.0-d   | Planificado                            |
+| `periods` (cierre, conformidad, reapertura)               | 1.0-e   | Planificado                            |
+| `incidents`, `clarifications`, `corrections`              | 1.0-f   | Planificado                            |
+| `reports`                                                 | 1.0-g   | Planificado                            |
 
 ## ADRs
 
@@ -70,3 +70,4 @@ Cada documento declara su estado al inicio:
 | [0012](adr/0012-attendance-status-and-precedence.md)            | Cuatro estados y su precedencia                                  | Aceptado                      |
 | [0013](adr/0013-postgresql-18.md)                               | PostgreSQL 18 como versión oficial (mínima, desarrollo, CI)      | Aceptado                      |
 | [0014](adr/0014-postgres-sessions-and-login.md)                 | Sesiones en PostgreSQL y acceso controlado a la identidad        | Aceptado                      |
+| [0015](adr/0015-access-control-and-mfa.md)                      | Catálogo cerrado de roles y MFA TOTP obligatorio                 | Aceptado                      |

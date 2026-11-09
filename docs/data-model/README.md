@@ -1,6 +1,6 @@
 # Modelo de datos
 
-> **Estado: Implementado (1.0-b.1).** Describe las migraciones `0001_base_multitenant` y `0002_sessions_security`. Las tablas futuras (calendarios, periodos, jornadas, incidencias, cierres) están en [`../architecture/planned-design-v1.md`](../architecture/planned-design-v1.md) como **Planificado**.
+> **Estado: Implementado (1.0-b.2).** Describe las migraciones `0001` a `0005`. Las tablas futuras (calendarios, periodos, jornadas, incidencias, cierres) están en [`../architecture/planned-design-v1.md`](../architecture/planned-design-v1.md) como **Planificado**.
 
 ## Diagrama
 
@@ -16,25 +16,39 @@ erDiagram
   app_user ||--o| app_user_credential : "credencial"
   app_user ||--o{ auth_session : "abre"
   app_user |o--o{ security_event : "genera"
+  user_tenant ||--o{ membership_role : "tiene"
+  role ||--o{ membership_role : "se asigna"
+  role ||--o{ role_permission : "incluye"
+  permission ||--o{ role_permission : "se concede"
+  app_user ||--o| user_mfa : "configura"
+  app_user ||--o{ mfa_recovery_code : "guarda"
+  app_user ||--o{ mfa_attempt : "intenta"
 ```
 
 ## Tablas
 
-| Tabla                   | Tenant | RLS          | Permisos de `puntuale_app`                           | Notas                                                                                |
-| ----------------------- | ------ | ------------ | ---------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| `tenant`                | `id`   | ENABLE+FORCE | `SELECT`                                             | Una empresa (razón social), con su zona IANA                                         |
-| `app_user`              | —      | No (global)  | Ninguno                                              | Identidad global; el email es `citext` único. Se lee con funciones `auth_*`          |
-| `user_tenant`           | Sí     | ENABLE+FORCE | `SELECT, INSERT, UPDATE`                             | Membresía `active`/`revoked`; `employee_id` opcional y único                         |
-| `employee`              | Sí     | ENABLE+FORCE | `SELECT, INSERT, UPDATE`                             | Mínimo (E1). **Sin `DELETE`**: baja lógica con `status = 'terminated'`               |
-| `attendance_event`      | Sí     | ENABLE+FORCE | `SELECT, INSERT`                                     | Solo inserción (trigger). Idempotencia por `client_event_id`                         |
-| `audit_event`           | Sí     | ENABLE+FORCE | `SELECT, INSERT`                                     | Solo inserción (trigger). `id` global con huecos; expone `public_id`                 |
-| `app_user_credential`   | —      | No (global)  | Ninguno                                              | Hash Argon2id y estado `active`/`disabled`                                           |
-| `auth_session`          | —      | No (global)  | `SELECT, INSERT`; `UPDATE` de actividad y revocación | Solo guarda el SHA-256 del token                                                     |
-| `security_event`        | —      | No (global)  | `INSERT`                                             | Solo inserción (trigger). Sin correo, contraseña ni token                            |
-| `login_failure_account` | —      | No (global)  | `SELECT, INSERT`                                     | Fallos recientes por cuenta; llave HMAC                                              |
-| `login_failure_ip`      | —      | No (global)  | `SELECT, INSERT`                                     | Fallos recientes por IP; llave HMAC. Un login exitoso no borra los de otros intentos |
-| `rate_limit_bucket`     | —      | No (global)  | `SELECT, INSERT, UPDATE`                             | Contadores por minuto; llaves HMAC                                                   |
-| `schema_migration`      | —      | —            | Ninguno                                              | Control de migraciones (solo la conexión administrativa)                             |
+| Tabla                   | Tenant | RLS          | Permisos de `puntuale_app`                                | Notas                                                                                |
+| ----------------------- | ------ | ------------ | --------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `tenant`                | `id`   | ENABLE+FORCE | `SELECT`                                                  | Una empresa (razón social), con su zona IANA                                         |
+| `app_user`              | —      | No (global)  | Ninguno                                                   | Identidad global; el email es `citext` único. Se lee con funciones `auth_*`          |
+| `user_tenant`           | Sí     | ENABLE+FORCE | `SELECT, INSERT`; `UPDATE` solo de `status`               | Membresía `active`/`revoked`; `employee_id` opcional y único                         |
+| `employee`              | Sí     | ENABLE+FORCE | `SELECT, INSERT, UPDATE`                                  | Mínimo (E1). **Sin `DELETE`**: baja lógica con `status = 'terminated'`               |
+| `attendance_event`      | Sí     | ENABLE+FORCE | `SELECT, INSERT`                                          | Solo inserción (trigger). Idempotencia por `client_event_id`                         |
+| `audit_event`           | Sí     | ENABLE+FORCE | `SELECT, INSERT`                                          | Solo inserción (trigger). `id` global con huecos; expone `public_id`                 |
+| `app_user_credential`   | —      | No (global)  | Ninguno                                                   | Hash Argon2id y estado `active`/`disabled`                                           |
+| `auth_session`          | —      | No (global)  | `SELECT, INSERT`; `UPDATE` de actividad, revocación y MFA | Solo guarda el SHA-256 del token; `mfa_verified_at` marca la sesión verificada       |
+| `security_event`        | —      | No (global)  | `INSERT`                                                  | Solo inserción (trigger). Sin correo, contraseña ni token                            |
+| `login_failure_account` | —      | No (global)  | `SELECT, INSERT`                                          | Fallos recientes por cuenta; llave HMAC                                              |
+| `login_failure_ip`      | —      | No (global)  | `SELECT, INSERT`                                          | Fallos recientes por IP; llave HMAC. Un login exitoso no borra los de otros intentos |
+| `rate_limit_bucket`     | —      | No (global)  | `SELECT, INSERT, UPDATE`                                  | Contadores por minuto; llaves HMAC                                                   |
+| `role`                  | —      | No (global)  | `SELECT`                                                  | Catálogo cerrado; indica si exige MFA y si es administrativo                         |
+| `permission`            | —      | No (global)  | `SELECT`                                                  | `active` o `reserved`; los reservados nunca se conceden                              |
+| `role_permission`       | —      | No (global)  | `SELECT`                                                  | Matriz de roles y permisos                                                           |
+| `membership_role`       | Sí     | ENABLE+FORCE | `SELECT, INSERT`; `UPDATE` solo del retiro                | Retiro lógico. Solo alcance `tenant`; un rol vigente no se duplica                   |
+| `user_mfa`              | —      | No (global)  | `SELECT, INSERT`; `UPDATE` por columnas                   | Secreto solo cifrado (`v1.…`); `last_accepted_step` impide reutilizar códigos        |
+| `mfa_recovery_code`     | —      | No (global)  | `SELECT, INSERT`; `UPDATE` de uso e invalidación          | Solo la huella HMAC                                                                  |
+| `mfa_attempt`           | —      | No (global)  | `SELECT, INSERT`                                          | Intentos recientes por persona                                                       |
+| `schema_migration`      | —      | —            | Ninguno                                                   | Control de migraciones (solo la conexión administrativa)                             |
 
 Todos los `id` son UUIDv7 generados por la base (`uuidv7()`), salvo `audit_event.id` (`bigint` identity).
 
@@ -71,16 +85,21 @@ Todos los `id` son UUIDv7 generados por la base (`uuidv7()`), salvo `audit_event
 
 ## Funciones y triggers
 
-| Nombre                                        | Tipo               | Efecto                                                                             |
-| --------------------------------------------- | ------------------ | ---------------------------------------------------------------------------------- |
-| `app_current_tenant()`                        | Función            | Lee `app.tenant_id`; `NULL` si falta o no es UUID (falla cerrada)                  |
-| `reject_mutation()`                           | Trigger            | Rechaza `UPDATE`, `DELETE` y `TRUNCATE` en tablas de solo inserción                |
-| `reject_tenant_change()`                      | Trigger            | Rechaza cambiar `tenant_id` en `employee` y `user_tenant`                          |
-| `reject_employee_delete()`                    | Trigger            | Rechaza `DELETE` y `TRUNCATE` en `employee` (baja lógica)                          |
-| `auth_find_account(text)`                     | `SECURITY DEFINER` | Devuelve `user_id` y hash de una cuenta activa, por correo; sin filas si no existe |
-| `auth_session_identity(text)`                 | `SECURITY DEFINER` | Devuelve la identidad de una sesión activa, por hash del token                     |
-| `auth_clear_login_failures(text)`             | `SECURITY DEFINER` | Borra los fallos de una cuenta tras un login exitoso                               |
-| `auth_release_login_ip_attempt(bigint, text)` | `SECURITY DEFINER` | Retira de la IP solo el intento de un login con contraseña correcta                |
-| `auth_purge_throttle()`                       | `SECURITY DEFINER` | Borra fallos y contadores vencidos                                                 |
+| Nombre                                        | Tipo               | Efecto                                                                                                       |
+| --------------------------------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------ |
+| `app_current_tenant()`                        | Función            | Lee `app.tenant_id`; `NULL` si falta o no es UUID (falla cerrada)                                            |
+| `reject_mutation()`                           | Trigger            | Rechaza `UPDATE`, `DELETE` y `TRUNCATE` en tablas de solo inserción                                          |
+| `reject_tenant_change()`                      | Trigger            | Rechaza cambiar `tenant_id` en `employee` y `user_tenant`                                                    |
+| `reject_employee_delete()`                    | Trigger            | Rechaza `DELETE` y `TRUNCATE` en `employee` (baja lógica)                                                    |
+| `auth_find_account(text)`                     | `SECURITY DEFINER` | Devuelve `user_id` y hash de una cuenta activa, por correo; sin filas si no existe                           |
+| `auth_session_identity(text)`                 | `SECURITY DEFINER` | Devuelve la identidad de una sesión activa, por hash del token                                               |
+| `auth_clear_login_failures(text)`             | `SECURITY DEFINER` | Borra los fallos de una cuenta tras un login exitoso                                                         |
+| `auth_release_login_ip_attempt(bigint, text)` | `SECURITY DEFINER` | Retira de la IP solo el intento de un login con contraseña correcta                                          |
+| `auth_purge_throttle()`                       | `SECURITY DEFINER` | Borra fallos y contadores vencidos                                                                           |
+| `auth_session_tenants(text)`                  | `SECURITY DEFINER` | Empresas activas de una sesión vigente, por hash del token                                                   |
+| `access_member_identities()`                  | `SECURITY DEFINER` | Nombre y correo de los miembros del tenant de la transacción; sin contexto, nada                             |
+| `auth_clear_mfa_attempts(uuid)`               | `SECURITY DEFINER` | Borra los intentos de MFA de una persona tras un factor correcto                                             |
+| `auth_purge_mfa_attempts()`                   | `SECURITY DEFINER` | Borra los intentos de MFA vencidos                                                                           |
+| `access_effective_owner_memberships()`        | `SECURITY DEFINER` | Membresías del tenant de la transacción con rol de propietario vigente, membresía activa y credencial activa |
 
 Las funciones `auth_*` pertenecen a `puntuale_auth_definer` (`NOLOGIN`, sin superusuario, sin `BYPASSRLS`), con `search_path` fijo y `EXECUTE` solo para `puntuale_app` ([ADR 0014](../adr/0014-postgres-sessions-and-login.md)). `auth_session` y `security_event` son globales: una sesión identifica a una persona, no a una empresa.

@@ -22,7 +22,9 @@ describe('migraciones', () => {
     try {
       const result = await runMigrations(client);
       expect(result.applied).toEqual([]);
-      expect(result.skipped).toEqual(expect.arrayContaining(['0001', '0002', '0003']));
+      expect(result.skipped).toEqual(
+        expect.arrayContaining(['0001', '0002', '0003', '0004', '0005']),
+      );
     } finally {
       client.release();
     }

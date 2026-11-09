@@ -8,6 +8,8 @@ export interface ActiveSessionRecord {
   lastActivityAt: Date;
   idleExpiresAt: Date;
   expiresAt: Date;
+  /** Momento en que esta sesión completó MFA. Null si todavía no. */
+  mfaVerifiedAt: Date | null;
 }
 
 /** Datos de la petición que se registran. No incluye cuerpo, cookies ni encabezados de autenticación. */

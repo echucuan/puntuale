@@ -8,6 +8,11 @@ const FUNCTIONS = [
   'auth_clear_login_failures(text)',
   'auth_purge_throttle()',
   'auth_release_login_ip_attempt(bigint,text)',
+  'auth_session_tenants(text)',
+  'access_member_identities()',
+  'auth_clear_mfa_attempts(uuid)',
+  'auth_purge_mfa_attempts()',
+  'access_effective_owner_memberships()',
 ];
 
 let db: TestDatabase;
@@ -221,6 +226,7 @@ describe('alcance de lectura de auth_session (ADR 0014)', () => {
     expect(rows.map((r) => r.column_name)).toEqual([
       'idle_expires_at',
       'last_activity_at',
+      'mfa_verified_at',
       'revoked_at',
       'revoked_reason',
     ]);

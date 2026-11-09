@@ -26,6 +26,12 @@ export const API_ERROR_CODES = [
   'forbidden',
   'rate_limited',
   'payload_too_large',
+  'permission_denied',
+  'mfa_required',
+  'mfa_enrollment_required',
+  'invalid_mfa_code',
+  'last_admin',
+  'self_modification',
 ] as const;
 export type ApiErrorCode = (typeof API_ERROR_CODES)[number];
 
