@@ -84,6 +84,8 @@ Una instalación limpia (`pnpm install --frozen-lockfile`) ejecuta `pnpm check`,
 
 **`@node-rs/argon2`:** se distribuye precompilado por plataforma como dependencia opcional, así que no necesita autorizarse en `allowBuilds`.
 
+**Dependencias de MFA:** `otpauth` calcula y valida los códigos TOTP en la API y `uqr` dibuja el QR en el navegador. El enlace con el secreto no sale a ningún servicio externo.
+
 **Decoradores en la API:** NestJS usa decoradores heredados (`experimentalDecorators`) sin `emitDecoratorMetadata`. Por eso cada dependencia se inyecta con `@Inject(TOKEN)` explícito.
 
 ## 5. Antes de contribuir
