@@ -1,0 +1,5 @@
+# Falsos positivos de gitleaks: claves ficticias usadas solo en pruebas.
+# Commit afectado: c9e5c98badd7448a228a9b73a6e04950697d6679
+# Cada huella suprime un único hallazgo. No agregar exclusiones de archivos, directorios o reglas.
+c9e5c98badd7448a228a9b73a6e04950697d6679:apps/api/src/modules/identity/domain/mfa.test.ts:generic-api-key:13
+c9e5c98badd7448a228a9b73a6e04950697d6679:apps/api/test/support/config.ts:generic-api-key:28
