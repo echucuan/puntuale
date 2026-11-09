@@ -20,6 +20,12 @@ const USERS = [
     status: 'active',
   },
   {
+    email: 'admin.demo@puntuale.test',
+    displayName: 'Administración Demo',
+    password: 'Demo-Admin-2027',
+    status: 'active',
+  },
+  {
     email: 'baja.demo@puntuale.test',
     displayName: 'Cuenta Deshabilitada',
     password: 'Demo-Baja-2027',
@@ -28,6 +34,74 @@ const USERS = [
 ] as const;
 
 const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]']);
+
+/** Empresa ficticia del piloto. Sus identificadores los genera la base en cada instalación. */
+const PILOT_TENANT = { legalName: 'Empresa Piloto Demo', timezone: 'America/Mexico_City' };
+
+/** Membresías del piloto. Solo Ana y Luis son colaboradores: la cuenta administradora no. */
+const PILOT_MEMBERS = [
+  {
+    email: 'ana.demo@puntuale.test',
+    employee: { number: 'DEMO-001', displayName: 'Ana Demo' },
+    role: 'employee',
+  },
+  {
+    email: 'luis.demo@puntuale.test',
+    employee: { number: 'DEMO-002', displayName: 'Luis Demo' },
+    role: 'employee',
+  },
+  { email: 'admin.demo@puntuale.test', employee: null, role: 'company_owner' },
+] as const;
+
+/**
+ * Crea la empresa y lo que le falte. No modifica membresías ni roles existentes, para que repetir la
+ * semilla no deshaga lo que se probó en la pantalla de accesos. Nunca toca el MFA.
+ */
+async function seedPilot(client: Client): Promise<void> {
+  const existing = await client.query<{ id: string }>(
+    'SELECT id FROM tenant WHERE legal_name = $1',
+    [PILOT_TENANT.legalName],
+  );
+  const tenantId =
+    existing.rows[0]?.id ??
+    (
+      await client.query<{ id: string }>(
+        'INSERT INTO tenant (legal_name, timezone) VALUES ($1, $2) RETURNING id',
+        [PILOT_TENANT.legalName, PILOT_TENANT.timezone],
+      )
+    ).rows[0]!.id;
+
+  for (const member of PILOT_MEMBERS) {
+    const user = await client.query<{ id: string }>('SELECT id FROM app_user WHERE email = $1', [
+      member.email,
+    ]);
+    const userId = user.rows[0]!.id;
+    const membership = await client.query(
+      'SELECT 1 FROM user_tenant WHERE tenant_id = $1 AND user_id = $2',
+      [tenantId, userId],
+    );
+    if (membership.rows.length > 0) continue;
+
+    const employeeId = member.employee
+      ? (
+          await client.query<{ id: string }>(
+            `INSERT INTO employee (tenant_id, employee_number, display_name)
+             VALUES ($1, $2, $3) RETURNING id`,
+            [tenantId, member.employee.number, member.employee.displayName],
+          )
+        ).rows[0]!.id
+      : null;
+    const created = await client.query<{ id: string }>(
+      `INSERT INTO user_tenant (tenant_id, user_id, employee_id)
+       VALUES ($1, $2, $3) RETURNING id`,
+      [tenantId, userId, employeeId],
+    );
+    await client.query(
+      'INSERT INTO membership_role (tenant_id, membership_id, role_code) VALUES ($1, $2, $3)',
+      [tenantId, created.rows[0]!.id, member.role],
+    );
+  }
+}
 
 async function main(): Promise<void> {
   const adminUrl = process.env['DATABASE_ADMIN_URL'];
@@ -59,8 +133,11 @@ async function main(): Promise<void> {
         [rows[0]!.id, passwordHash, user.status],
       );
     }
+    await seedPilot(client);
     await client.query('COMMIT');
-    process.stdout.write(`Usuarios ficticios listos: ${USERS.length}.\n`);
+    process.stdout.write(
+      `Usuarios ficticios listos: ${USERS.length}. Empresa piloto: ${PILOT_TENANT.legalName}.\n`,
+    );
   } catch (error) {
     await client.query('ROLLBACK');
     throw error;

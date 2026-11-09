@@ -2,7 +2,18 @@
 
 Todos los cambios relevantes del proyecto se registran aquí. El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). Las versiones siguen los pasos del plan (1.0-a, 1.0-b, …).
 
-## [Sin publicar] · 1.0-b.1 Sesiones y protecciones HTTP
+## [Sin publicar] · 1.0-b.2 Empresa, accesos y MFA
+
+### Agregado
+
+- Migración `0004_access_control_mfa`: `role`, `permission`, `role_permission`, `membership_role`, `user_mfa`, `mfa_recovery_code`, `mfa_attempt`, `auth_session.mfa_verified_at` y sus funciones `SECURITY DEFINER`.
+- La semilla crea una empresa piloto ficticia, dos colaboradores y una cuenta administradora separada.
+
+### Cambiado
+
+- `puntuale_app` solo puede actualizar `status` en `user_tenant`.
+
+## 1.0-b.1 Sesiones y protecciones HTTP
 
 ### Agregado
 
