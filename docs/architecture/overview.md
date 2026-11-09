@@ -1,6 +1,6 @@
 # Arquitectura: visión general
 
-> **Estado: Implementado (1.0-a).** Describe solo lo que existe hoy. Lo que viene después está en [`planned-design-v1.md`](planned-design-v1.md) (**Planificado**).
+> **Estado: Implementado (1.0-b.1).** Describe solo lo que existe hoy. Lo que viene después está en [`planned-design-v1.md`](planned-design-v1.md) (**Planificado**).
 
 ## Forma
 
@@ -8,8 +8,8 @@ Monolito modular en un monorepo de pnpm ([ADR 0002](../adr/0002-modular-monolith
 
 ```text
 apps/
-  api/        NestJS 12: módulos health, tenancy, audit y time-tracking
-  web/        React 19 + Vite 8: pantalla base
+  api/        NestJS 12: módulos health, identity, tenancy, audit y time-tracking
+  web/        React 19 + Vite 8: acceso y sesiones
 packages/
   contracts/     Zod: tipos y esquemas compartidos (sin lógica)
   domain-rules/  Reglas puras y deterministas (sin infraestructura)
@@ -67,6 +67,7 @@ sequenceDiagram
 
 ## Datos y seguridad
 
+- Antes de los controladores corren dos guards globales en `/api/`: `RateLimitGuard` y `CsrfGuard`. `SessionResolver` lo implementa la cookie de sesión del módulo `identity` ([ADR 0014](../adr/0014-postgres-sessions-and-login.md)).
 - Dos conexiones: la administrativa solo migra; la API usa `puntuale_app`, sujeta a RLS ([modelo de datos](../data-model/README.md), [seguridad](../security/README.md)).
 - Toda escritura ocurre en `withTenant` y se audita en esa misma transacción ([reglas de negocio](../business-rules/)).
 

@@ -8,6 +8,7 @@ import { startTestDatabase, type TestDatabase } from '@puntuale/db/testing';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createApp } from '../../src/create-app';
+import { testConfig } from '../support/config';
 import { createTestApp } from '../support/create-test-app';
 import { TEST_SESSION_HEADER } from '../support/test-session.resolver';
 import { seedTenant, type SeededTenant } from '../support/seed';
@@ -21,7 +22,7 @@ beforeAll(async () => {
   db = await startTestDatabase();
   a = await seedTenant(db.adminPool, 'A');
   b = await seedTenant(db.adminPool, 'B');
-  app = await createTestApp({ nodeEnv: 'test', port: 0, databaseUrl: db.appUrl });
+  app = await createTestApp(testConfig(db.appUrl));
   await app.init();
 });
 
@@ -91,7 +92,7 @@ describe('GET /api/t/:tenantId/context (TenantGuard)', () => {
 
 describe('composición productiva (createApp)', () => {
   it('ignora el encabezado de pruebas y responde 401 aunque NODE_ENV sea test', async () => {
-    const production = await createApp({ nodeEnv: 'test', port: 0, databaseUrl: db.appUrl });
+    const production = await createApp(testConfig(db.appUrl));
     await production.init();
     try {
       const response = await request(production.getHttpServer())

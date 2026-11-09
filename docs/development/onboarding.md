@@ -47,6 +47,7 @@ pnpm install
 | `pnpm test:e2e`          | API por HTTP (supertest) contra PostgreSQL 18                                                                                 | **Sí**            |
 | `pnpm db:up` / `db:down` | Levanta o detiene la base local (`infra/docker-compose.yml`)                                                                  | **Sí**            |
 | `pnpm db:migrate`        | Crea el rol de aplicación y aplica las migraciones                                                                            | **Sí** (base)     |
+| `pnpm db:seed`           | Crea las cuentas ficticias de desarrollo (solo local)                                                                         | **Sí** (base)     |
 | `pnpm dev`               | API (`:3000`) y web (`:5173`) en modo desarrollo                                                                              | **Sí** (base)     |
 
 Si cambias la base de datos o la API, además de `pnpm check` deben pasar `pnpm test:integration` y `pnpm test:e2e`. Para arrancar el entorno local, ver [`docs/operations/local.md`](../operations/local.md).
@@ -80,6 +81,8 @@ Una instalación limpia (`pnpm install --frozen-lockfile`) ejecuta `pnpm check`,
 **Overrides de seguridad:** `pnpm-workspace.yaml` fuerza `glob` ≥ 14.0.2 y `minimatch` ≥ 11.0.1 en las dependencias de desarrollo que los traen. El motivo y los avisos están en [`docs/security/README.md`](../security/README.md). Revisa con `pnpm audit --prod` y `pnpm audit --dev` por separado.
 
 **Pruebas con sesión:** la aplicación productiva no tiene ningún atajo de sesión. Las pruebas e2e que necesitan una sesión usan `createTestApp` (`apps/api/test/support/create-test-app.ts`), que sustituye el resolvedor por `TestSessionResolver`. Este solo funciona con la configuración de `vitest.e2e.config.ts` y una base local ([ADR 0007](../adr/0007-own-authentication.md)).
+
+**`@node-rs/argon2`:** se distribuye precompilado por plataforma como dependencia opcional, así que no necesita autorizarse en `allowBuilds`.
 
 **Decoradores en la API:** NestJS usa decoradores heredados (`experimentalDecorators`) sin `emitDecoratorMetadata`. Por eso cada dependencia se inyecta con `@Inject(TOKEN)` explícito.
 

@@ -2,6 +2,32 @@
 
 Todos los cambios relevantes del proyecto se registran aquí. El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). Las versiones siguen los pasos del plan (1.0-a, 1.0-b, …).
 
+## [Sin publicar] · 1.0-b.1 Sesiones y protecciones HTTP
+
+### Agregado
+
+- ADR 0014: sesiones en PostgreSQL y acceso controlado a la identidad.
+- Migración `0002_sessions_security`: `app_user_credential`, `auth_session`, `security_event` (solo inserción), `login_failure`, `rate_limit_bucket`, el rol `puntuale_auth_definer` y las funciones `SECURITY DEFINER` `auth_*`.
+- Módulo `identity`: login, logout, sesión actual, listado y revocación de sesiones propias, rotación, Argon2id, CSRF, límites de tasa y eventos de seguridad.
+- Helmet, CORS con lista explícita y un identificador por petición (`X-Request-Id`).
+- Pantalla web de acceso, sesiones activas, revocación y rotación.
+- `pnpm db:seed` con cuentas ficticias de desarrollo.
+- Un cuerpo JSON mayor a 100 KB responde 413 `payload_too_large` con el formato estándar de error.
+
+### Cambiado
+
+- Identidad visual en la web: pantalla de acceso de dos columnas y «Mi cuenta» con «Seguridad y sesiones», logo original y tokens centralizados en `@puntuale/ui`. Identificadores y diagnóstico pasan a «Detalles técnicos».
+- Montserrat autoalojada en la web con `@fontsource/montserrat` 5.3.0 (subconjunto latino, pesos 400, 600 y 700), sin solicitudes a servicios externos, con Arial como alternativa y con su aviso OFL-1.1 incluido en el build.
+- La web muestra un mensaje específico para `payload_too_large` y una cuenta regresiva durante la espera por demasiados intentos.
+- Migración `0003_separate_login_failures`: separa `login_failure` en `login_failure_account` y `login_failure_ip`, conserva el historial y agrega `auth_release_login_ip_attempt`.
+- El límite de login por IP es exacto entre conexiones e instancias: la reserva bloquea cuenta e IP en orden fijo, sin mantener los bloqueos durante Argon2id.
+- Un login correcto ya no borra fallos de IP ajenos: reinicia su cuenta y retira solo su propio intento.
+- Rotación de un solo uso: el intento perdedor responde 409 `conflict`, sin sesión ni cookie. Una cookie de otra persona ya no se rota.
+- El ADR 0014 documenta el alcance del `SELECT` de `puntuale_app` sobre `auth_session`.
+- `puntuale_app` ya no tiene `SELECT` sobre `app_user` (R5).
+- `CookieSessionResolver` reemplaza a `NoSessionResolver`: las rutas de empresa aceptan una sesión real.
+- La configuración exige `AUTH_SECRET` y `CORS_ORIGINS`.
+
 ## [Sin publicar] · 1.0-a Base del monorepo
 
 ### Agregado

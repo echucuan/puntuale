@@ -1,25 +1,25 @@
 # `@puntuale/ui`
 
-> **Estado: Parcial (1.0-a).** Solo tokens de marca. Los componentes compartidos llegan con las primeras pantallas (1.0-b en adelante).
+> **Estado: Parcial (1.0-b.1).** Solo tokens de marca. Los componentes de las pantallas actuales viven en `apps/web`.
 
 ## Propósito
 
-Mantener la identidad visual de Puntuale (la de la landing) en la aplicación web, desde una sola fuente.
+Mantener la identidad visual de Puntuale (la del kit y la landing) en la aplicación web, desde una sola fuente.
 
 ## Responsabilidades
 
-- Colores y tipografía (`tokens.ts`) y su forma de variables CSS (`--pt-*`).
+- Colores, radios, pesos y tipografía (`tokens.ts`) y su forma de variables CSS (`--pt-*`).
 - **No** contiene reglas de negocio ni llamadas a la API.
 - **No** modifica la landing: copia sus valores de `styles.css` (ADR 0008).
 
 ## Dependencias
 
-Ninguna en tiempo de ejecución.
+`@fontsource/montserrat`, con versión exacta y licencia OFL-1.1: archivos de la fuente que `fonts.css` importa.
 
 ## Reglas
 
-1. Los colores coinciden con las variables `:root` de la landing (`--navy`, `--blue`, `--pale`, `--gray`, `--ink`, `--muted`, `--line`).
-2. No se descargan fuentes externas. Montserrat se usa solo si está instalada; si no, Arial o la del sistema.
+1. Los colores de marca coinciden con el kit de identidad y con las variables `:root` de la landing (`--navy`, `--blue`, `--pale`, `--gray`, `--ink`, `--muted`, `--line`). `control`, `success`, `warning` y `danger`, con sus fondos, son tokens funcionales de la aplicación y no forman parte del kit.
+2. Montserrat se sirve desde la propia aplicación: nada de Google Fonts ni otros servicios externos. Solo se cargan el subconjunto latino, que cubre el español, y los pesos de `fontWeights` (400, 600 y 700). Si falla la carga, se usa Arial.
 
 ## Entradas y salidas
 
@@ -27,11 +27,14 @@ Ninguna en tiempo de ejecución.
 | ---------------- | --------------------------- |
 | `colors`         | Paleta de marca             |
 | `fontFamily`     | Pila tipográfica            |
+| `fontWeights`    | Pesos tipográficos          |
+| `radii`          | Radios de borde             |
 | `cssVariables()` | Bloque `:root` con `--pt-*` |
+| `./fonts.css`    | Montserrat autoalojada      |
 
 ## Pruebas relacionadas
 
-`src/tokens.test.ts`: formato de colores, colores principales, variables CSS y ausencia de fuentes externas.
+`src/tokens.test.ts`: formato y valores de los colores, variables CSS, ausencia de fuentes externas, correspondencia entre `fontWeights` y `fonts.css`, y contraste AA de las combinaciones de tokens. Esa comprobación de contraste no es una auditoría completa de accesibilidad.
 
 ## Cómo extenderlo
 

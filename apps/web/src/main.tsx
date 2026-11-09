@@ -2,6 +2,7 @@ import { cssVariables } from '@puntuale/ui';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './app';
+import '@puntuale/ui/fonts.css';
 import './styles.css';
 
 const tokens = document.createElement('style');

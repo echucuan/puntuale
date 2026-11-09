@@ -1,13 +1,13 @@
 import { Module } from '@nestjs/common';
+import { IdentityModule } from '../identity/identity.module';
 import { TenantAccessService } from './application/tenant-access.service';
-import { sessionResolverProvider } from './infrastructure/session-resolver.provider';
 import { TenantContextController } from './presentation/tenant-context.controller';
 import { TenantGuard } from './presentation/tenant.guard';
-import { SESSION_RESOLVER } from './domain/session';
 
 @Module({
+  imports: [IdentityModule],
   controllers: [TenantContextController],
-  providers: [sessionResolverProvider, TenantAccessService, TenantGuard],
-  exports: [SESSION_RESOLVER, TenantAccessService, TenantGuard],
+  providers: [TenantAccessService, TenantGuard],
+  exports: [TenantAccessService, TenantGuard],
 })
 export class TenancyModule {}

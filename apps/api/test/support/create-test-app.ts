@@ -18,5 +18,5 @@ export async function createTestApp(config: AppConfig): Promise<INestApplication
     .useValue(resolver)
     .compile();
   const app = moduleRef.createNestApplication({ logger: ['error'] });
-  return configureApp(app);
+  return configureApp(app, config);
 }

@@ -4,18 +4,16 @@ import { fileURLToPath } from 'node:url';
 import 'reflect-metadata';
 import { Test } from '@nestjs/testing';
 import { afterEach, describe, expect, it } from 'vitest';
+import { testConfig } from '../../../../test/support/config';
 import { AppModule } from '../../../app.module';
 import type { AppConfig } from '../../../config/app-config';
-import { SESSION_RESOLVER, type SessionResolver } from '../domain/session';
-import { NoSessionResolver } from './no-session.resolver';
+import { SESSION_RESOLVER, type SessionResolver } from '../../tenancy/domain/session';
+import { CookieSessionResolver } from './cookie-session.resolver';
 
 const SRC_DIR = fileURLToPath(new URL('../../../', import.meta.url));
 const USER = '0190f5e2-0000-7000-8000-0000000000bb';
-
-function config(nodeEnv: AppConfig['nodeEnv']): AppConfig {
-  // La URL no se usa: el Pool de pg no se conecta hasta la primera consulta.
-  return { nodeEnv, port: 0, databaseUrl: 'postgres://u:ficticia@localhost:5432/db' };
-}
+// La URL no se usa: sin cookie no hay consulta y el Pool no se conecta.
+const DATABASE_URL = 'postgres://u:ficticia@localhost:5432/db';
 
 const closers: (() => Promise<void>)[] = [];
 afterEach(async () => {
@@ -31,15 +29,15 @@ async function* sourceFiles(dir: string): AsyncGenerator<string> {
 }
 
 describe('composición productiva: sin adaptador de autenticación de pruebas (ADR 0007)', () => {
-  it.each(['development', 'test', 'production'] as const)(
-    'con NODE_ENV=%s el módulo registra NoSessionResolver, que nunca da sesión',
+  it.each(['development', 'test', 'production'] as AppConfig['nodeEnv'][])(
+    'con NODE_ENV=%s solo la cookie da sesión: el encabezado de pruebas se ignora',
     async (nodeEnv) => {
       const moduleRef = await Test.createTestingModule({
-        imports: [AppModule.forRoot(config(nodeEnv))],
+        imports: [AppModule.forRoot(testConfig(DATABASE_URL, {}, nodeEnv))],
       }).compile();
       closers.push(() => moduleRef.close());
-      const resolver = moduleRef.get<SessionResolver>(SESSION_RESOLVER);
-      expect(resolver).toBeInstanceOf(NoSessionResolver);
+      const resolver = moduleRef.get<SessionResolver>(SESSION_RESOLVER, { strict: false });
+      expect(resolver).toBeInstanceOf(CookieSessionResolver);
       await expect(resolver.resolve({ headers: { 'x-test-user-id': USER } })).resolves.toBeNull();
     },
   );

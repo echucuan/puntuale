@@ -102,7 +102,8 @@ describe('baja lógica: el colaborador terminado se conserva como histórico', (
         'SELECT id, user_id, employee_id, status FROM user_tenant WHERE employee_id = $1',
         [a.employeeId],
       );
-      const user = await client.query('SELECT id FROM app_user WHERE id = $1', [a.userId]);
+      // puntuale_app ya no lee app_user (ADR 0014): la identidad se comprueba como administrador.
+      const user = await db.adminPool.query('SELECT id FROM app_user WHERE id = $1', [a.userId]);
       return {
         employee: employee.rows,
         events: events.rows,
