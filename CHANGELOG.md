@@ -6,6 +6,7 @@ Todos los cambios relevantes del proyecto se registran aquí. El formato se basa
 
 ### Agregado
 
+- ADR 0015: catálogo cerrado de roles y MFA TOTP obligatorio para funciones administrativas.
 - Migración `0004_access_control_mfa`: `role`, `permission`, `role_permission`, `membership_role`, `user_mfa`, `mfa_recovery_code`, `mfa_attempt`, `auth_session.mfa_verified_at` y sus funciones `SECURITY DEFINER`.
 - Consulta y selección de empresa, identidad propia por empresa, vista de accesos, asignación y retiro de roles, activación y desactivación de membresías, con auditoría en la misma transacción.
 - `PermissionGuard` con denegación predeterminada y permisos de módulos futuros reservados.
@@ -19,6 +20,7 @@ Todos los cambios relevantes del proyecto se registran aquí. El formato se basa
 - `puntuale_app` solo puede actualizar `status` en `user_tenant`.
 - `GET /api/auth/session` incluye `session.mfaVerified`.
 - El último propietario protegido debe tener membresía activa, rol vigente y credencial activa (migración `0005_effective_owner_guard`).
+- Drizzle se difiere: el acceso a datos sigue con `pg` y SQL parametrizado (ADR 0002).
 
 ## 1.0-b.1 Sesiones y protecciones HTTP
 

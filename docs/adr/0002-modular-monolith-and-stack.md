@@ -24,7 +24,7 @@ La V1 tiene unos doce módulos de dominio con reglas transaccionales estrictas: 
 - **API:** NestJS. Las dependencias se inyectan con `@Inject(TOKEN)` explícito, sin depender de `emitDecoratorMetadata`, para que se comporten igual con `tsc`, `tsx` y Vitest.
 - **Base de datos:** PostgreSQL **18**. Se eligió en lugar de la versión 16 que indicaba la propuesta porque incluye `uuidv7()` nativo, y así se evita una dependencia.
 - **Migraciones:** SQL versionado escrito a mano en `db/migrations/`. Las políticas RLS, los triggers y las restricciones de exclusión se expresan mejor en SQL. Las aplica un ejecutor pequeño propio, `@puntuale/db`.
-- **Acceso a datos:** la propuesta contempla Drizzle ORM. En el paso 1.0-a se usa `pg` directamente porque solo hay tres consultas. Drizzle se incorporará, con su propio ADR, cuando llegue el primer módulo con CRUD (1.0-b).
+- **Acceso a datos:** la propuesta contempla Drizzle ORM. En el paso 1.0-a se usa `pg` directamente porque solo hay tres consultas. Drizzle se incorporará, con su propio ADR, cuando llegue el primer módulo con CRUD (1.0-b). **Actualización (1.0-b.2):** Drizzle se difiere. Todo el acceso sigue con `pg` y SQL parametrizado dentro de `withTenant`, con RLS y pruebas contra PostgreSQL real; incorporarlo durante una entrega de seguridad añadía una capa nueva sin resolver un problema actual. Se reevaluará, con su propio ADR, cuando el volumen de consultas de los módulos lo justifique.
 - **Validación y contratos:** Zod en `packages/contracts`, compartido entre la API y la web.
 - **Web:** React + Vite. La PWA llega en el paso 1.0-d.
 - **Monorepo:** workspaces de pnpm, **sin Turborepo**. Con cinco paquetes basta `pnpm -r`. Turborepo puede agregarse si los tiempos de compilación lo justifican.

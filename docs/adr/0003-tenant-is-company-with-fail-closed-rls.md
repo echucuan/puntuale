@@ -41,4 +41,4 @@ Puntuale guarda los datos laborales de varias empresas en la misma base de datos
 - Dos pestañas pueden trabajar con empresas distintas sin interferir entre sí.
 - Si la aplicación falla (por ejemplo, alguien olvida un filtro), la RLS contiene el error; si falla la RLS, lo contiene el guard.
 - Los reportes consolidados por grupo requerirían un ADR nuevo.
-- El alcance por centro o área **no** lo cubre la RLS de tenant. Lo resolverá una `ScopePolicy` en la aplicación, con sus pruebas, en el paso 1.0-b.
+- El alcance por centro o área **no** lo cubre la RLS de tenant. Lo resolverá una `ScopePolicy` en la aplicación, con sus pruebas, cuando existan esas entidades. En 1.0-b.2 solo existe el alcance de empresa ([ADR 0015](0015-access-control-and-mfa.md)).
