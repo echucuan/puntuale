@@ -41,7 +41,8 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
-  await db.adminPool.query('DELETE FROM login_failure');
+  await db.adminPool.query('DELETE FROM login_failure_account');
+  await db.adminPool.query('DELETE FROM login_failure_ip');
   await db.adminPool.query('DELETE FROM rate_limit_bucket');
 });
 
@@ -242,7 +243,7 @@ describe('cuerpo demasiado grande', () => {
     expect(await countFor('auth_session', account.userId)).toBe(0);
     expect(await countFor('security_event', account.userId)).toBe(0);
     const { rows } = await db.adminPool.query<{ count: string }>(
-      'SELECT count(*) FROM login_failure',
+      'SELECT count(*) FROM login_failure_account',
     );
     expect(rows[0]!.count).toBe('0');
     expect(await securityEventsText()).not.toContain(SENTINEL);
@@ -399,6 +400,75 @@ describe('rotación y revocación', () => {
       .expect(404);
     expect(ApiErrorSchema.parse(response.body).error.code).toBe('not_found');
     await owner.agent.get('/api/auth/session').expect(200);
+    expect((await eventsOf(attacker.body.user.id)).map((e) => e.event_type)).toEqual([
+      'login_succeeded',
+    ]);
+    expect((await eventsOf(owner.body.user.id)).map((e) => e.event_type)).toEqual([
+      'login_succeeded',
+    ]);
+  });
+
+  it('el listado solo contiene las sesiones de quien pregunta', async () => {
+    const owner = await loggedIn(await seedAccount(db.adminPool));
+    const other = await loggedIn(await seedAccount(db.adminPool));
+    const response = await other.agent.get('/api/auth/sessions').expect(200);
+    const { sessions } = ActiveSessionsResponseSchema.parse(response.body);
+    expect(sessions.map((s) => s.id)).toEqual([other.body.session.id]);
+    expect(response.text).not.toContain(owner.body.session.id);
+  });
+
+  it('el listado ignora cualquier filtro de persona enviado por el cliente', async () => {
+    const owner = await loggedIn(await seedAccount(db.adminPool));
+    const other = await loggedIn(await seedAccount(db.adminPool));
+    const response = await other.agent
+      .get(`/api/auth/sessions?userId=${owner.body.user.id}&user_id=${owner.body.user.id}`)
+      .expect(200);
+    expect(response.text).not.toContain(owner.body.session.id);
+  });
+
+  it('iniciar sesión como otra persona con una cookie ajena no rota esa sesión', async () => {
+    const owner = await loggedIn(await seedAccount(db.adminPool));
+    const other = await seedAccount(db.adminPool);
+    const response = await request(server())
+      .post('/api/auth/login')
+      .set('Origin', TEST_ORIGIN)
+      .set('Cookie', owner.cookie)
+      .set('X-CSRF-Token', owner.body.csrfToken)
+      .send({ email: other.email, password: other.password })
+      .expect(200);
+    expect(CurrentSessionResponseSchema.parse(response.body).user.id).toBe(other.userId);
+
+    const { rows } = await db.adminPool.query<{ revoked_at: Date | null }>(
+      'SELECT revoked_at FROM auth_session WHERE id = $1',
+      [owner.body.session.id],
+    );
+    expect(rows[0]!.revoked_at).toBeNull();
+    await request(server()).get('/api/auth/session').set('Cookie', owner.cookie).expect(200);
+    expect((await eventsOf(owner.body.user.id)).map((e) => e.event_type)).toEqual([
+      'login_succeeded',
+    ]);
+    expect((await eventsOf(other.userId)).map((e) => e.event_type)).toEqual(['login_succeeded']);
+  });
+
+  it('un token de otra persona, recién rotado, no impide iniciar sesión', async () => {
+    const owner = await loggedIn(await seedAccount(db.adminPool));
+    await owner.agent
+      .post('/api/auth/login')
+      .set('Origin', TEST_ORIGIN)
+      .set('X-CSRF-Token', owner.body.csrfToken)
+      .send({ email: owner.body.user.email, password: TEST_PASSWORD })
+      .expect(200);
+
+    const other = await seedAccount(db.adminPool);
+    const anonymous = await request(server()).get('/api/auth/csrf').set('Cookie', owner.cookie);
+    const nonce = (anonymous.headers['set-cookie'] as unknown as string[])[0]!.split(';')[0]!;
+    await request(server())
+      .post('/api/auth/login')
+      .set('Origin', TEST_ORIGIN)
+      .set('Cookie', `${owner.cookie}; ${nonce}`)
+      .set('X-CSRF-Token', CsrfResponseSchema.parse(anonymous.body).csrfToken)
+      .send({ email: other.email, password: other.password })
+      .expect(200);
   });
 
   it('un identificador inválido responde 404', async () => {
@@ -582,21 +652,21 @@ describe('límites de tasa', () => {
       await postLogin(request.agent(server()), account.email, 'incorrecta');
     }
     await db.adminPool.query(
-      `UPDATE login_failure SET occurred_at = now() - interval '16 minutes'`,
+      `UPDATE login_failure_account SET occurred_at = now() - interval '16 minutes'`,
     );
     expect((await postLogin(request.agent(server()), account.email, account.password)).status).toBe(
       200,
     );
   });
 
-  it('un login exitoso borra los fallos de la cuenta', async () => {
+  it('un login exitoso borra los fallos de su cuenta', async () => {
     const account = await seedAccount(db.adminPool);
     for (let i = 0; i < 4; i += 1) {
       await postLogin(request.agent(server()), account.email, 'incorrecta');
     }
     await loggedIn(account);
     const { rows } = await db.adminPool.query<{ count: string }>(
-      'SELECT count(*) FROM login_failure',
+      'SELECT count(*) FROM login_failure_account',
     );
     expect(rows[0]!.count).toBe('0');
   });

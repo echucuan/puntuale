@@ -10,11 +10,13 @@ import { keyedHash } from '../domain/keyed-hash';
 import { evaluateLoginThrottle } from '../domain/login-throttle';
 import { generateSessionToken, hashSessionToken } from '../domain/session-token';
 import { findLoginAccount } from '../infrastructure/account.repository';
+import { decideRotation, ROTATION_CONFLICT_WINDOW_SECONDS } from '../domain/session-rotation';
 import {
   clearLoginFailures,
-  insertLoginFailure,
-  lockAccountThrottle,
+  insertLoginAttempt,
+  lockThrottleKeys,
   readThrottleSnapshot,
+  releaseIpAttempt,
 } from '../infrastructure/login-throttle.repository';
 import { PasswordHasher } from '../infrastructure/password-hasher';
 import { recordSecurityEvent } from '../infrastructure/security-event.repository';
@@ -22,6 +24,7 @@ import {
   findActiveSession,
   insertSession,
   listActiveSessions,
+  lockPresentedSession,
   revokeSession,
   type SessionListItem,
 } from '../infrastructure/session.repository';
@@ -52,7 +55,8 @@ export class AuthService {
 
   /**
    * Inicia sesión. Fallar por contraseña o por cuenta inexistente produce la misma respuesta.
-   * `previousToken` es el token que traía la petición: si sigue vigente, se revoca (rotación).
+   * `previousToken` es el token que traía la petición: si es una sesión vigente de la misma persona,
+   * se consume una sola vez (rotación). Quien pierde esa carrera recibe 409, sin sesión ni cookie.
    */
   async login(
     credentials: LoginRequest,
@@ -63,7 +67,7 @@ export class AuthService {
     const ipKey = this.key('throttle:ip', meta.ip ?? 'unknown');
     const identifierHash = this.key('identifier', credentials.email);
 
-    await this.reserveAttempt(accountKey, ipKey, identifierHash, meta);
+    const ipAttemptId = await this.reserveAttempt(accountKey, ipKey, identifierHash, meta);
 
     const account = await findLoginAccount(this.pool, credentials.email);
     const valid = await this.hasher.verify(account?.passwordHash ?? null, credentials.password);
@@ -81,16 +85,40 @@ export class AuthService {
     const token = generateSessionToken();
     const tokenHash = hashSessionToken(token);
     const session = await withTransaction(this.pool, async (client) => {
-      if (previousToken) {
-        const previous = await findActiveSession(client, hashSessionToken(previousToken));
-        if (previous && (await revokeSession(client, previous.id, 'rotated'))) {
-          await recordSecurityEvent(client, {
-            eventType: 'session_revoked',
-            userId: previous.userId,
-            sessionId: previous.id,
-            meta,
-          });
-        }
+      // Orden fijo: primero la sesión presentada y después el bloqueo de la cuenta. La reserva nunca
+      // toca sesiones, así que no puede formarse un ciclo de espera.
+      const presented = previousToken
+        ? await lockPresentedSession(
+            client,
+            hashSessionToken(previousToken),
+            ROTATION_CONFLICT_WINDOW_SECONDS,
+          )
+        : null;
+
+      // La contraseña fue correcta: este intento no cuenta como fallo, aunque pierda la rotación.
+      await lockThrottleKeys(client, [accountKey]);
+      await clearLoginFailures(client, accountKey);
+      await releaseIpAttempt(client, ipAttemptId, ipKey);
+
+      const rotation = decideRotation(presented, account.userId);
+      if (rotation.kind === 'conflict') {
+        await recordSecurityEvent(client, {
+          eventType: 'login_failed',
+          failureReason: 'session_rotation_conflict',
+          userId: account.userId,
+          sessionId: rotation.sessionId,
+          meta,
+        });
+        return null;
+      }
+      if (rotation.kind === 'rotate') {
+        await revokeSession(client, rotation.sessionId, 'rotated');
+        await recordSecurityEvent(client, {
+          eventType: 'session_revoked',
+          userId: account.userId,
+          sessionId: rotation.sessionId,
+          meta,
+        });
       }
       const sessionId = await insertSession(
         client,
@@ -99,7 +127,6 @@ export class AuthService {
         this.config.security.session,
         meta,
       );
-      await clearLoginFailures(client, accountKey);
       await recordSecurityEvent(client, {
         eventType: 'login_succeeded',
         userId: account.userId,
@@ -108,37 +135,42 @@ export class AuthService {
       });
       return findActiveSession(client, tokenHash);
     });
-    return { token, session: session! };
+    if (!session) throw new ApiCodedException(HttpStatus.CONFLICT, 'conflict');
+    return { token, session };
   }
 
   /**
    * Revisa los límites y registra el intento **antes** de verificar la contraseña, para que
-   * peticiones concurrentes no los superen. Un login exitoso borra después esos registros.
+   * peticiones concurrentes no los superen. Comprobar y registrar es atómico entre conexiones e
+   * instancias: los bloqueos de cuenta e IP duran solo esta transacción, nunca durante Argon2id.
+   * Devuelve el id del intento en la IP, que un login correcto retira después.
    */
   private async reserveAttempt(
     accountKey: string,
     ipKey: string,
     identifierHash: string,
     meta: RequestMeta,
-  ): Promise<void> {
+  ): Promise<string> {
     const limits = this.config.security.login;
-    const decision = await withTransaction(this.pool, async (client) => {
-      await lockAccountThrottle(client, accountKey);
+    const reservation = await withTransaction(this.pool, async (client) => {
+      await lockThrottleKeys(client, [accountKey, ipKey]);
       const snapshot = await readThrottleSnapshot(client, accountKey, ipKey, limits.windowSeconds);
-      const result = evaluateLoginThrottle(snapshot, limits);
-      if (result.allowed) {
-        await insertLoginFailure(client, accountKey, ipKey);
-      } else {
-        await recordSecurityEvent(client, {
-          eventType: 'login_failed',
-          failureReason: 'rate_limited',
-          identifierHash,
-          meta,
-        });
+      const decision = evaluateLoginThrottle(snapshot, limits);
+      if (decision.allowed) {
+        return { decision, ipAttemptId: await insertLoginAttempt(client, accountKey, ipKey) };
       }
-      return result;
+      await recordSecurityEvent(client, {
+        eventType: 'login_failed',
+        failureReason: 'rate_limited',
+        identifierHash,
+        meta,
+      });
+      return { decision, ipAttemptId: null };
     });
-    if (!decision.allowed) throw new RateLimitedException(decision.retryAfterSeconds);
+    if (!reservation.decision.allowed) {
+      throw new RateLimitedException(reservation.decision.retryAfterSeconds);
+    }
+    return reservation.ipAttemptId!;
   }
 
   async logout(session: ActiveSessionRecord, meta: RequestMeta): Promise<void> {

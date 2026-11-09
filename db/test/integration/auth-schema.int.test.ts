@@ -7,6 +7,7 @@ const FUNCTIONS = [
   'auth_session_identity(text)',
   'auth_clear_login_failures(text)',
   'auth_purge_throttle()',
+  'auth_release_login_ip_attempt(bigint,text)',
 ];
 
 let db: TestDatabase;
@@ -148,9 +149,81 @@ describe('permisos de puntuale_app', () => {
   });
 
   it('no puede borrar filas de las tablas de límites', async () => {
-    for (const table of ['login_failure', 'rate_limit_bucket', 'auth_session']) {
+    for (const table of [
+      'login_failure_account',
+      'login_failure_ip',
+      'rate_limit_bucket',
+      'auth_session',
+    ]) {
       await expect(db.appPool.query(`DELETE FROM ${table}`)).rejects.toThrow(/permission denied/);
     }
+  });
+});
+
+describe('fallos de login separados por cuenta e IP', () => {
+  const ACCOUNT = '1'.repeat(64);
+  const IP = '2'.repeat(64);
+
+  it('borrar los fallos de una cuenta no toca el historial de IP', async () => {
+    await db.appPool.query('INSERT INTO login_failure_account (account_key) VALUES ($1)', [
+      ACCOUNT,
+    ]);
+    await db.appPool.query('INSERT INTO login_failure_ip (ip_key) VALUES ($1)', [IP]);
+    await db.appPool.query('SELECT auth_clear_login_failures($1)', [ACCOUNT]);
+    const { rows } = await db.adminPool.query<{ account: number; ip: number }>(
+      `SELECT (SELECT count(*)::int FROM login_failure_account WHERE account_key = $1) AS account,
+              (SELECT count(*)::int FROM login_failure_ip WHERE ip_key = $2) AS ip`,
+      [ACCOUNT, IP],
+    );
+    expect(rows[0]).toEqual({ account: 0, ip: 1 });
+  });
+
+  it('liberar un intento exige su id y su llave, y solo retira esa fila', async () => {
+    const insert = () =>
+      db.appPool.query<{ id: string }>(
+        'INSERT INTO login_failure_ip (ip_key) VALUES ($1) RETURNING id',
+        ['3'.repeat(64)],
+      );
+    const first = (await insert()).rows[0]!.id;
+    const second = (await insert()).rows[0]!.id;
+    await db.appPool.query('SELECT auth_release_login_ip_attempt($1, $2)', [first, '4'.repeat(64)]);
+    await db.appPool.query('SELECT auth_release_login_ip_attempt($1, $2)', [first, '3'.repeat(64)]);
+    const { rows } = await db.adminPool.query<{ id: string }>(
+      'SELECT id FROM login_failure_ip WHERE ip_key = $1',
+      ['3'.repeat(64)],
+    );
+    expect(rows.map((r) => r.id)).toEqual([second]);
+  });
+});
+
+describe('alcance de lectura de auth_session (ADR 0014)', () => {
+  it('auth_session no tiene RLS y puntuale_app la lee: el aislamiento está en la aplicación', async () => {
+    const { rows } = await db.adminPool.query<{
+      rls: boolean;
+      can_select: boolean;
+      can_update: boolean;
+    }>(
+      `SELECT c.relrowsecurity AS rls,
+              has_table_privilege('puntuale_app', 'auth_session', 'SELECT') AS can_select,
+              has_table_privilege('puntuale_app', 'auth_session', 'UPDATE') AS can_update
+         FROM pg_class c WHERE c.oid = 'public.auth_session'::regclass`,
+    );
+    expect(rows[0]).toEqual({ rls: false, can_select: true, can_update: false });
+  });
+
+  it('solo puede modificar las columnas de actividad y revocación', async () => {
+    const { rows } = await db.adminPool.query<{ column_name: string }>(
+      `SELECT column_name FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'auth_session'
+          AND has_column_privilege('puntuale_app', 'public.auth_session', column_name, 'UPDATE')
+        ORDER BY column_name`,
+    );
+    expect(rows.map((r) => r.column_name)).toEqual([
+      'idle_expires_at',
+      'last_activity_at',
+      'revoked_at',
+      'revoked_reason',
+    ]);
   });
 });
 

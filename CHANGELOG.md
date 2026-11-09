@@ -16,6 +16,11 @@ Todos los cambios relevantes del proyecto se registran aquí. El formato se basa
 
 ### Cambiado
 
+- Migración `0003_separate_login_failures`: separa `login_failure` en `login_failure_account` y `login_failure_ip`, conserva el historial y agrega `auth_release_login_ip_attempt`.
+- El límite de login por IP es exacto entre conexiones e instancias: la reserva bloquea cuenta e IP en orden fijo, sin mantener los bloqueos durante Argon2id.
+- Un login correcto ya no borra fallos de IP ajenos: reinicia su cuenta y retira solo su propio intento.
+- Rotación de un solo uso: el intento perdedor responde 409 `conflict`, sin sesión ni cookie. Una cookie de otra persona ya no se rota.
+- El ADR 0014 documenta el alcance del `SELECT` de `puntuale_app` sobre `auth_session`.
 - `puntuale_app` ya no tiene `SELECT` sobre `app_user` (R5).
 - `CookieSessionResolver` reemplaza a `NoSessionResolver`: las rutas de empresa aceptan una sesión real.
 - La configuración exige `AUTH_SECRET` y `CORS_ORIGINS`.

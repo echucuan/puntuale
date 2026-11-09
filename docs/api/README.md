@@ -8,17 +8,17 @@
 - Las rutas de una empresa tienen la forma `/api/t/:tenantId/...` y pasan por `TenantGuard`.
 - Errores con una sola forma, `ApiErrorSchema`: `{ "error": { "code": "...", "message": "..." } }`. El mensaje está en español y no expone detalles internos.
 
-| HTTP | `code`                | Cuándo                                                              |
-| ---- | --------------------- | ------------------------------------------------------------------- |
-| 401  | `unauthenticated`     | No hay sesión                                                       |
-| 401  | `invalid_credentials` | Login rechazado (misma respuesta para cualquier causa)              |
-| 403  | `forbidden`           | Falla CSRF o el origen no está permitido                            |
-| 404  | `not_found`           | No existe **o** no tienes acceso (no se distingue)                  |
-| 409  | `conflict`            | Reservado: `client_event_id` repetido con otra evidencia (1.0-d)    |
-| 413  | `payload_too_large`   | Cuerpo JSON mayor al límite de 100 KB; no llega a los controladores |
-| 422  | `validation_failed`   | Entrada fuera de contrato                                           |
-| 429  | `rate_limited`        | Límite de tasa; incluye `Retry-After` en segundos                   |
-| 500  | `internal_error`      | Error inesperado                                                    |
+| HTTP | `code`                | Cuándo                                                                                                                          |
+| ---- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| 401  | `unauthenticated`     | No hay sesión                                                                                                                   |
+| 401  | `invalid_credentials` | Login rechazado (misma respuesta para cualquier causa)                                                                          |
+| 403  | `forbidden`           | Falla CSRF o el origen no está permitido                                                                                        |
+| 404  | `not_found`           | No existe **o** no tienes acceso (no se distingue)                                                                              |
+| 409  | `conflict`            | Login que perdió la rotación de una sesión (sin `Set-Cookie`). Reservado: `client_event_id` repetido con otra evidencia (1.0-d) |
+| 413  | `payload_too_large`   | Cuerpo JSON mayor al límite de 100 KB; no llega a los controladores                                                             |
+| 422  | `validation_failed`   | Entrada fuera de contrato                                                                                                       |
+| 429  | `rate_limited`        | Límite de tasa; incluye `Retry-After` en segundos                                                                               |
+| 500  | `internal_error`      | Error inesperado                                                                                                                |
 
 ## Endpoints
 
@@ -64,3 +64,5 @@ Toda petición `POST`, `PUT`, `PATCH` o `DELETE` a `/api/` exige `X-CSRF-Token` 
 `GET /api/auth/csrf` entrega un token ligado a la sesión o, si no hay sesión, a una cookie `HttpOnly` anónima. El token cambia al iniciar sesión.
 
 La cookie de sesión se llama `puntuale_session` en desarrollo y `__Host-puntuale_session` en producción. El token nunca aparece en el cuerpo de una respuesta.
+
+Si `POST /api/auth/login` llega con una sesión vigente de la misma persona, la consume una sola vez (rotación). Si otra petición ya la consumió en los últimos 30 segundos, responde 409 `conflict`: no crea sesión ni envía `Set-Cookie`. Según el momento, la petición perdedora también puede responder 403 por CSRF o 429 por la espera progresiva, siempre sin cookie. Sin sesión propia vigente, el login es independiente y no afecta otras sesiones.

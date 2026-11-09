@@ -1,5 +1,6 @@
 import type { ClientBase, Pool } from 'pg';
 import type { ActiveSessionRecord, RequestMeta } from '../domain/active-session';
+import type { PresentedSession } from '../domain/session-rotation';
 
 /** Una actividad más reciente que esto no se vuelve a escribir (ADR 0014). */
 const TOUCH_INTERVAL_SECONDS = 60;
@@ -54,6 +55,43 @@ export async function findActiveSession(
     tokenHash,
   ]);
   return rows[0] ? toRecord(rows[0]) : null;
+}
+
+/**
+ * Bloquea la sesión de un hash de token, en cualquier estado, hasta el fin de la transacción. Si otra
+ * rotación está en curso, espera a que termine y devuelve el estado ya confirmado.
+ */
+export async function lockPresentedSession(
+  client: ClientBase,
+  tokenHash: string,
+  conflictWindowSeconds: number,
+): Promise<PresentedSession | null> {
+  const { rows } = await client.query<{
+    id: string;
+    user_id: string;
+    active: boolean;
+    recently_rotated: boolean;
+  }>(
+    `SELECT id, user_id,
+            (revoked_at IS NULL
+              AND expires_at > statement_timestamp()
+              AND idle_expires_at > statement_timestamp()) AS active,
+            (revoked_reason IS NOT DISTINCT FROM 'rotated'
+              AND revoked_at > statement_timestamp() - make_interval(secs => $2)) AS recently_rotated
+       FROM auth_session
+      WHERE token_hash = $1
+        FOR UPDATE`,
+    [tokenHash, conflictWindowSeconds],
+  );
+  const row = rows[0];
+  return row
+    ? {
+        id: row.id,
+        userId: row.user_id,
+        active: row.active,
+        recentlyRotated: row.recently_rotated === true,
+      }
+    : null;
 }
 
 /** Renueva la inactividad, como máximo una vez por minuto. Nunca extiende la expiración absoluta. */

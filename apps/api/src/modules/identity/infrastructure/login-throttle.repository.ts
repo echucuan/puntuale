@@ -1,11 +1,23 @@
 import type { ClientBase } from 'pg';
 import type { LoginThrottleSnapshot } from '../domain/login-throttle';
 
-/** Serializa los intentos de una misma cuenta durante la transacción. */
-export async function lockAccountThrottle(client: ClientBase, accountKey: string): Promise<void> {
-  await client.query('SELECT pg_advisory_xact_lock(hashtextextended($1, 0))', [accountKey]);
+/**
+ * Serializa, hasta el fin de la transacción, los intentos que comparten alguna llave. Toma los
+ * bloqueos en orden ascendente del identificador numérico: al ser un orden total, dos
+ * transacciones no pueden esperarse mutuamente, sea cual sea el orden de `keys`.
+ */
+export async function lockThrottleKeys(client: ClientBase, keys: readonly string[]): Promise<void> {
+  await client.query(
+    `SELECT pg_advisory_xact_lock(lock_id)
+       FROM (SELECT DISTINCT hashtextextended(key, 0) AS lock_id
+               FROM unnest($1::text[]) AS key
+              ORDER BY lock_id
+             OFFSET 0) AS ordered`,
+    [keys],
+  );
 }
 
+/** Lee los fallos vigentes. Debe ejecutarse después de `lockThrottleKeys`, en otra sentencia. */
 export async function readThrottleSnapshot(
   client: ClientBase,
   accountKey: string,
@@ -19,19 +31,22 @@ export async function readThrottleSnapshot(
     newest_account: string | null;
     oldest_ip: string | null;
   }>(
-    `WITH recent AS (
-       SELECT account_key, ip_key,
-              extract(epoch FROM clock_timestamp() - occurred_at) AS age
-         FROM login_failure
-        WHERE occurred_at > clock_timestamp() - make_interval(secs => $3)
-          AND (account_key = $1 OR ip_key = $2)
-     )
-     SELECT count(*) FILTER (WHERE account_key = $1)::int AS account_failures,
-            count(*) FILTER (WHERE ip_key = $2)::int AS ip_failures,
-            max(age) FILTER (WHERE account_key = $1) AS oldest_account,
-            min(age) FILTER (WHERE account_key = $1) AS newest_account,
-            max(age) FILTER (WHERE ip_key = $2) AS oldest_ip
-       FROM recent`,
+    `SELECT account.failures AS account_failures,
+            account.oldest AS oldest_account,
+            account.newest AS newest_account,
+            ip.failures AS ip_failures,
+            ip.oldest AS oldest_ip
+       FROM (SELECT count(*)::int AS failures,
+                    max(extract(epoch FROM clock_timestamp() - occurred_at)) AS oldest,
+                    min(extract(epoch FROM clock_timestamp() - occurred_at)) AS newest
+               FROM login_failure_account
+              WHERE account_key = $1
+                AND occurred_at > clock_timestamp() - make_interval(secs => $3)) AS account,
+            (SELECT count(*)::int AS failures,
+                    max(extract(epoch FROM clock_timestamp() - occurred_at)) AS oldest
+               FROM login_failure_ip
+              WHERE ip_key = $2
+                AND occurred_at > clock_timestamp() - make_interval(secs => $3)) AS ip`,
     [accountKey, ipKey, windowSeconds],
   );
   const row = rows[0]!;
@@ -45,17 +60,30 @@ export async function readThrottleSnapshot(
   };
 }
 
-export async function insertLoginFailure(
+/** Registra el intento en ambos límites y devuelve el id de su fila de IP. */
+export async function insertLoginAttempt(
   client: ClientBase,
   accountKey: string,
   ipKey: string,
-): Promise<void> {
-  await client.query('INSERT INTO login_failure (account_key, ip_key) VALUES ($1, $2)', [
-    accountKey,
-    ipKey,
-  ]);
+): Promise<string> {
+  await client.query('INSERT INTO login_failure_account (account_key) VALUES ($1)', [accountKey]);
+  const { rows } = await client.query<{ id: string }>(
+    'INSERT INTO login_failure_ip (ip_key) VALUES ($1) RETURNING id',
+    [ipKey],
+  );
+  return rows[0]!.id;
 }
 
+/** Reinicia los fallos de la cuenta. No toca el historial de IP. */
 export async function clearLoginFailures(client: ClientBase, accountKey: string): Promise<void> {
   await client.query('SELECT auth_clear_login_failures($1)', [accountKey]);
+}
+
+/** Retira de la IP solo el intento indicado: los demás fallos siguen contando. */
+export async function releaseIpAttempt(
+  client: ClientBase,
+  attemptId: string,
+  ipKey: string,
+): Promise<void> {
+  await client.query('SELECT auth_release_login_ip_attempt($1, $2)', [attemptId, ipKey]);
 }

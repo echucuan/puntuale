@@ -9,9 +9,46 @@ import {
   progressiveDelaySeconds,
 } from './login-throttle';
 import { isOriginAllowed, isSafeMethod } from './origin-policy';
+import { decideRotation, type PresentedSession } from './session-rotation';
 import { generateSessionToken, hashSessionToken } from './session-token';
 
 const SECRET = 's'.repeat(40);
+
+describe('decisión de rotación', () => {
+  const presented = (overrides: Partial<PresentedSession> = {}): PresentedSession => ({
+    id: 's1',
+    userId: 'u1',
+    active: true,
+    recentlyRotated: false,
+    ...overrides,
+  });
+
+  it('sin sesión presentada, el login es independiente', () => {
+    expect(decideRotation(null, 'u1')).toEqual({ kind: 'independent' });
+  });
+
+  it('solo se rota una sesión activa propia', () => {
+    expect(decideRotation(presented(), 'u1')).toEqual({ kind: 'rotate', sessionId: 's1' });
+  });
+
+  it('una sesión ajena nunca se rota ni produce conflicto', () => {
+    expect(decideRotation(presented(), 'u2')).toEqual({ kind: 'independent' });
+    expect(decideRotation(presented({ active: false, recentlyRotated: true }), 'u2')).toEqual({
+      kind: 'independent',
+    });
+  });
+
+  it('una sesión propia recién rotada es un intento perdedor', () => {
+    expect(decideRotation(presented({ active: false, recentlyRotated: true }), 'u1')).toEqual({
+      kind: 'conflict',
+      sessionId: 's1',
+    });
+  });
+
+  it('una sesión vencida, cerrada o rotada hace tiempo no bloquea el login', () => {
+    expect(decideRotation(presented({ active: false }), 'u1')).toEqual({ kind: 'independent' });
+  });
+});
 
 describe('token de sesión', () => {
   it('genera 256 bits distintos en cada llamada', () => {
