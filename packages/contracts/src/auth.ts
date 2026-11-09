@@ -35,7 +35,7 @@ export type CsrfResponse = z.infer<typeof CsrfResponseSchema>;
 /** Respuesta de `POST /api/auth/login` y de `GET /api/auth/session`. */
 export const CurrentSessionResponseSchema = z.object({
   user: AuthUserSchema,
-  session: AuthSessionSchema,
+  session: AuthSessionSchema.extend({ mfaVerified: z.boolean() }),
   csrfToken: z.string(),
 });
 export type CurrentSessionResponse = z.infer<typeof CurrentSessionResponseSchema>;

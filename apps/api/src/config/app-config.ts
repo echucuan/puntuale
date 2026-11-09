@@ -11,6 +11,7 @@ const EnvSchema = z.object({
   PORT: z.coerce.number().int().min(0).max(65_535).default(3000),
   DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }),
   AUTH_SECRET: z.string().min(32),
+  MFA_ENCRYPTION_KEY: z.string().min(32),
   CORS_ORIGINS: z.string().min(1),
   SESSION_ABSOLUTE_TTL_SECONDS: positiveInt(43_200),
   SESSION_IDLE_TTL_SECONDS: positiveInt(1_800),
@@ -21,6 +22,10 @@ const EnvSchema = z.object({
   LOGIN_DELAY_MAX_MS: nonNegativeInt(30_000),
   RATE_LIMIT_API_IP_PER_MINUTE: positiveInt(120),
   RATE_LIMIT_API_SESSION_PER_MINUTE: positiveInt(300),
+  MFA_MAX_ATTEMPTS: positiveInt(5),
+  // Los intentos se purgan después de un día: la ventana no puede ser mayor.
+  MFA_ATTEMPT_WINDOW_SECONDS: z.coerce.number().int().min(1).max(86_400).default(900),
+  MFA_ENROLLMENT_TTL_SECONDS: positiveInt(900),
 });
 
 export interface SecurityConfig {
@@ -36,6 +41,13 @@ export interface SecurityConfig {
     delayMaxMs: number;
   };
   api: { perIpPerMinute: number; perSessionPerMinute: number };
+  mfa: {
+    /** Llave maestra del cifrado de secretos TOTP y de las huellas de recuperación. */
+    encryptionKey: string;
+    maxAttempts: number;
+    windowSeconds: number;
+    enrollmentTtlSeconds: number;
+  };
 }
 
 export interface AppConfig {
@@ -82,6 +94,12 @@ export function loadConfig(env: NodeJS.ProcessEnv): AppConfig {
   if (data.NODE_ENV === 'production' && data.AUTH_SECRET.includes('dev_only')) {
     throw new Error('Configuración inválida en: AUTH_SECRET. Revisa .env.example.');
   }
+  if (
+    data.NODE_ENV === 'production' &&
+    (data.MFA_ENCRYPTION_KEY.includes('dev_only') || data.MFA_ENCRYPTION_KEY === data.AUTH_SECRET)
+  ) {
+    throw new Error('Configuración inválida en: MFA_ENCRYPTION_KEY. Revisa .env.example.');
+  }
   const corsOrigins = parseCorsOrigins(data.CORS_ORIGINS, data.NODE_ENV);
   if (!corsOrigins) {
     throw new Error('Configuración inválida en: CORS_ORIGINS. Revisa .env.example.');
@@ -107,6 +125,12 @@ export function loadConfig(env: NodeJS.ProcessEnv): AppConfig {
       api: {
         perIpPerMinute: data.RATE_LIMIT_API_IP_PER_MINUTE,
         perSessionPerMinute: data.RATE_LIMIT_API_SESSION_PER_MINUTE,
+      },
+      mfa: {
+        encryptionKey: data.MFA_ENCRYPTION_KEY,
+        maxAttempts: data.MFA_MAX_ATTEMPTS,
+        windowSeconds: data.MFA_ATTEMPT_WINDOW_SECONDS,
+        enrollmentTtlSeconds: data.MFA_ENROLLMENT_TTL_SECONDS,
       },
     },
   };

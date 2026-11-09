@@ -65,6 +65,7 @@ export class AuthController {
         lastActivityAt: session.lastActivityAt.toISOString(),
         idleExpiresAt: session.idleExpiresAt.toISOString(),
         expiresAt: session.expiresAt.toISOString(),
+        mfaVerified: session.mfaVerifiedAt !== null,
       },
       csrfToken: this.csrfFor({ kind: 'session', sessionId: session.id }),
     };

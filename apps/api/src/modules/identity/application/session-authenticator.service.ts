@@ -40,6 +40,12 @@ export class SessionAuthenticator {
     return touchSession(this.pool, session, this.config.security.session.idleTtlSeconds);
   }
 
+  /** Hash del token de la cookie, para las funciones de base que validan la sesión por sí mismas. */
+  sessionTokenHash(request: SessionRequest): string | null {
+    const token = this.sessionToken(request);
+    return token ? hashSessionToken(token) : null;
+  }
+
   sessionToken(request: SessionRequest): string | null {
     const header = request.headers['cookie'];
     return readCookie(

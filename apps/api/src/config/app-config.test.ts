@@ -6,6 +6,7 @@ const valid = {
   PORT: '3000',
   DATABASE_URL: 'postgres://puntuale_app:ficticia@localhost:5432/puntuale',
   AUTH_SECRET: 'secreto_ficticio_dev_only_0123456789',
+  MFA_ENCRYPTION_KEY: 'llave_mfa_ficticia_dev_only_0123456789',
   CORS_ORIGINS: 'http://localhost:5173',
 };
 
@@ -13,10 +14,23 @@ const production = {
   ...valid,
   NODE_ENV: 'production',
   AUTH_SECRET: 'p'.repeat(40),
+  MFA_ENCRYPTION_KEY: 'm'.repeat(40),
   CORS_ORIGINS: 'https://app.puntuale.test',
 };
 
 describe('loadConfig', () => {
+  it('exige la llave MFA y la rechaza en producción si es ficticia o repite AUTH_SECRET', () => {
+    const withoutKey: Record<string, string> = { ...valid };
+    delete withoutKey['MFA_ENCRYPTION_KEY'];
+    expect(() => loadConfig(withoutKey)).toThrow('MFA_ENCRYPTION_KEY');
+    expect(() =>
+      loadConfig({ ...production, MFA_ENCRYPTION_KEY: 'x_dev_only_'.repeat(4) }),
+    ).toThrow('MFA_ENCRYPTION_KEY');
+    expect(() => loadConfig({ ...production, MFA_ENCRYPTION_KEY: production.AUTH_SECRET })).toThrow(
+      'MFA_ENCRYPTION_KEY',
+    );
+  });
+
   it('acepta una configuración válida y convierte el puerto', () => {
     expect(loadConfig(valid)).toMatchObject({
       nodeEnv: 'development',

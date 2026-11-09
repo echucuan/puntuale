@@ -28,11 +28,16 @@ pnpm dev
 
 ## Cuentas ficticias
 
-| Correo                    | Contraseña       | Estado        |
-| ------------------------- | ---------------- | ------------- |
-| `ana.demo@puntuale.test`  | `Demo-Ana-2027`  | Activa        |
-| `luis.demo@puntuale.test` | `Demo-Luis-2027` | Activa        |
-| `baja.demo@puntuale.test` | `Demo-Baja-2027` | Deshabilitada |
+| Correo                     | Contraseña        | Estado        |
+| -------------------------- | ----------------- | ------------- |
+| `ana.demo@puntuale.test`   | `Demo-Ana-2027`   | Activa        |
+| `luis.demo@puntuale.test`  | `Demo-Luis-2027`  | Activa        |
+| `baja.demo@puntuale.test`  | `Demo-Baja-2027`  | Deshabilitada |
+| `admin.demo@puntuale.test` | `Demo-Admin-2027` | Activa        |
+
+La semilla crea «Empresa Piloto Demo» con Ana y Luis como colaboradores y `admin.demo@puntuale.test` como propietario, sin registro de colaborador. Repetirla no cambia membresías, roles ni MFA existentes.
+
+`MFA_ENCRYPTION_KEY` es obligatoria: si tu `.env` es anterior a 1.0-b.2, cópiala de `.env.example`. No la cambies después de inscribir MFA: la custodia está en [`docs/security/README.md`](../security/README.md).
 
 Solo sirven en local. Las variables opcionales de duración y límites están comentadas en `.env.example`.
 

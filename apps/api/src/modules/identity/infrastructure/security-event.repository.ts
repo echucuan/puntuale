@@ -1,7 +1,18 @@
 import type { ClientBase, Pool } from 'pg';
 import type { RequestMeta } from '../domain/active-session';
 
-export type SecurityEventType = 'login_succeeded' | 'login_failed' | 'logout' | 'session_revoked';
+export type SecurityEventType =
+  | 'login_succeeded'
+  | 'login_failed'
+  | 'logout'
+  | 'session_revoked'
+  | 'mfa_enrollment_started'
+  | 'mfa_enrolled'
+  | 'mfa_verified'
+  | 'mfa_failed'
+  | 'mfa_recovery_used'
+  | 'mfa_replaced'
+  | 'mfa_disabled';
 
 export interface SecurityEventInput {
   eventType: SecurityEventType;
