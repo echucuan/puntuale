@@ -1,5 +1,8 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { colors, cssVariables, fontFamily } from './tokens';
+import { colors, cssVariables, fontFamily, fontWeights } from './tokens';
+
+const fontsCss = readFileSync(new URL('./fonts.css', import.meta.url), 'utf8');
 
 function luminance(hex: string): number {
   const channel = (start: number) => {
@@ -42,6 +45,18 @@ describe('tokens de marca', () => {
 
   it('no depende de fuentes externas', () => {
     expect(cssVariables()).not.toMatch(/url\(|googleapis/);
+    expect(fontsCss).not.toMatch(/https?:|url\(/);
+  });
+
+  it('usa Montserrat con Arial como alternativa', () => {
+    expect(fontFamily.split(', ').slice(0, 2)).toEqual(['Montserrat', 'Arial']);
+  });
+
+  it('carga solo el subconjunto latino de los pesos definidos en los tokens', () => {
+    const imports = [...fontsCss.matchAll(/@import '([^']+)';/g)].map((match) => match[1]);
+    expect(imports).toEqual(
+      Object.values(fontWeights).map((weight) => `@fontsource/montserrat/latin-${weight}.css`),
+    );
   });
 
   it.each([

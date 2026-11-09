@@ -14,12 +14,12 @@ Mantener la identidad visual de Puntuale (la del kit y la landing) en la aplicac
 
 ## Dependencias
 
-Ninguna en tiempo de ejecución.
+`@fontsource/montserrat`, con versión exacta y licencia OFL-1.1: archivos de la fuente que `fonts.css` importa.
 
 ## Reglas
 
 1. Los colores de marca coinciden con el kit de identidad y con las variables `:root` de la landing (`--navy`, `--blue`, `--pale`, `--gray`, `--ink`, `--muted`, `--line`). `control`, `success`, `warning` y `danger`, con sus fondos, son tokens funcionales de la aplicación y no forman parte del kit.
-2. No se descargan fuentes externas. Montserrat se usa solo si está instalada; si no, Arial o la del sistema.
+2. Montserrat se sirve desde la propia aplicación: nada de Google Fonts ni otros servicios externos. Solo se cargan el subconjunto latino, que cubre el español, y los pesos de `fontWeights` (400, 600 y 700). Si falla la carga, se usa Arial.
 
 ## Entradas y salidas
 
@@ -30,10 +30,11 @@ Ninguna en tiempo de ejecución.
 | `fontWeights`    | Pesos tipográficos          |
 | `radii`          | Radios de borde             |
 | `cssVariables()` | Bloque `:root` con `--pt-*` |
+| `./fonts.css`    | Montserrat autoalojada      |
 
 ## Pruebas relacionadas
 
-`src/tokens.test.ts`: formato y valores de los colores, variables CSS, ausencia de fuentes externas y contraste AA de las combinaciones de tokens. Esa comprobación de contraste no es una auditoría completa de accesibilidad.
+`src/tokens.test.ts`: formato y valores de los colores, variables CSS, ausencia de fuentes externas, correspondencia entre `fontWeights` y `fonts.css`, y contraste AA de las combinaciones de tokens. Esa comprobación de contraste no es una auditoría completa de accesibilidad.
 
 ## Cómo extenderlo
 

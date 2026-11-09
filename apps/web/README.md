@@ -16,7 +16,7 @@ Interfaz web de Puntuale (React 19 + Vite 8), con la identidad visual del kit y 
 | Depende de            | Para qué                    |
 | --------------------- | --------------------------- |
 | `@puntuale/contracts` | Contratos de las respuestas |
-| `@puntuale/ui`        | Tokens de marca (`--pt-*`)  |
+| `@puntuale/ui`        | Tokens de marca y fuente    |
 | API (`pnpm dev`)      | Proxy de `/health` y `/api` |
 
 ## Marca
@@ -26,7 +26,8 @@ Interfaz web de Puntuale (React 19 + Vite 8), con la identidad visual del kit y 
 - `.pt-logo` completa el área de protección del kit (X = altura de la «P»), proporcional al ancho, y conserva el tamaño mínimo digital.
 - Los identificadores técnicos, la IP y el agente de usuario completo van en «Detalles técnicos». El estado de la API y la subversión son secundarios.
 - El azul real del PNG (≈ `#0050BE`) y su texto (≈ `#25272A`) difieren de los tokens del kit (`#1769AA` y `#202124`). La diferencia se conserva: el logo original no se recolorea.
-- Montserrat se usa solo si está instalada: la aplicación no descarga fuentes externas (`@puntuale/ui`).
+- Montserrat se sirve desde la aplicación mediante `@puntuale/ui/fonts.css`, sin solicitudes externas. Si falla la carga, se usa Arial.
+- `public/third-party/montserrat/OFL.txt` es copia sin cambios del copyright y la licencia OFL-1.1 del paquete instalado, y se publica con el build. Si cambia la versión de `@fontsource/montserrat`, se vuelve a copiar.
 
 ## Entradas y salidas
 

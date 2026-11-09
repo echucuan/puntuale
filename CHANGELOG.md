@@ -17,6 +17,7 @@ Todos los cambios relevantes del proyecto se registran aquí. El formato se basa
 ### Cambiado
 
 - Identidad visual en la web: pantalla de acceso de dos columnas y «Mi cuenta» con «Seguridad y sesiones», logo original y tokens centralizados en `@puntuale/ui`. Identificadores y diagnóstico pasan a «Detalles técnicos».
+- Montserrat autoalojada en la web con `@fontsource/montserrat` 5.3.0 (subconjunto latino, pesos 400, 600 y 700), sin solicitudes a servicios externos, con Arial como alternativa y con su aviso OFL-1.1 incluido en el build.
 - La web muestra un mensaje específico para `payload_too_large` y una cuenta regresiva durante la espera por demasiados intentos.
 - Migración `0003_separate_login_failures`: separa `login_failure` en `login_failure_account` y `login_failure_ip`, conserva el historial y agrega `auth_release_login_ip_attempt`.
 - El límite de login por IP es exacto entre conexiones e instancias: la reserva bloquea cuenta e IP en orden fijo, sin mantener los bloqueos durante Argon2id.

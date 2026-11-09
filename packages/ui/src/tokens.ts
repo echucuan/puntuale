@@ -30,7 +30,7 @@ export const radii = {
 
 /**
  * Montserrat Bold para títulos y Regular para texto, según el kit. Semibold es para controles y
- * etiquetas.
+ * etiquetas. Un peso nuevo también se agrega en `fonts.css`.
  */
 export const fontWeights = {
   regular: '400',
@@ -39,8 +39,8 @@ export const fontWeights = {
 } as const;
 
 /**
- * Pila tipográfica. La landing usa Montserrat; la aplicación **no** descarga fuentes externas
- * (Google Fonts) y usa Montserrat solo si está instalada localmente.
+ * Pila tipográfica. La aplicación sirve Montserrat desde su propio origen (`fonts.css`), sin
+ * Google Fonts ni otros servicios externos. Arial es la alternativa si falla la carga.
  */
 export const fontFamily = 'Montserrat, Arial, system-ui, sans-serif';
 
