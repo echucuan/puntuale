@@ -1,4 +1,6 @@
 import {
+  type AccessMembersResponse,
+  AccessMembersResponseSchema,
   type ActiveSession,
   ActiveSessionsResponseSchema,
   ApiErrorSchema,
@@ -6,11 +8,30 @@ import {
   type CurrentSessionResponse,
   CurrentSessionResponseSchema,
   type LoginRequest,
+  type MfaConfirmRequest,
+  type MfaConfirmResponse,
+  MfaConfirmResponseSchema,
+  type MfaDisableRequest,
+  type MfaEnrollmentRequest,
+  type MfaEnrollmentResponse,
+  MfaEnrollmentResponseSchema,
+  type MfaFactor,
+  type MfaStatusResponse,
+  MfaStatusResponseSchema,
+  type MyTenant,
+  MyTenantsResponseSchema,
+  type RoleCode,
+  type TenantMeResponse,
+  TenantMeResponseSchema,
 } from '@puntuale/contracts';
 
 export interface AuthFailure {
   code: string;
   retryAfterSeconds: number | null;
+}
+
+interface ResponseSchema<T> {
+  safeParse(body: unknown): { success: true; data: T } | { success: false };
 }
 
 export type AuthResult<T> = { ok: true; value: T } | { ok: false; failure: AuthFailure };
@@ -75,8 +96,12 @@ export function createAuthApi(fetchImpl: typeof fetch = (...args) => fetch(...ar
     };
   }
 
-  async function sendWithoutContent(path: string, method: string): Promise<AuthResult<null>> {
-    const init = await mutationInit(method);
+  async function sendWithoutContent(
+    path: string,
+    method: string,
+    body?: unknown,
+  ): Promise<AuthResult<null>> {
+    const init = await mutationInit(method, body);
     if (!init.ok) return init;
     try {
       const response = await fetchImpl(path, init.value);
@@ -91,7 +116,65 @@ export function createAuthApi(fetchImpl: typeof fetch = (...args) => fetch(...ar
     return parsed.success ? parsed.data : null;
   }
 
+  function parser<T>(schema: ResponseSchema<T>) {
+    return (body: unknown): T | null => {
+      const parsed = schema.safeParse(body);
+      return parsed.success ? parsed.data : null;
+    };
+  }
+
+  async function postJson<T>(
+    path: string,
+    body: unknown,
+    schema: ResponseSchema<T>,
+  ): Promise<AuthResult<T>> {
+    const init = await mutationInit('POST', body);
+    if (!init.ok) return init;
+    return readJson(path, init.value, parser(schema));
+  }
+
+  const tenantBase = (tenantId: string) => `/api/t/${encodeURIComponent(tenantId)}`;
+  const memberBase = (tenantId: string, membershipId: string) =>
+    `${tenantBase(tenantId)}/access/members/${encodeURIComponent(membershipId)}`;
+
   return {
+    myTenants: async (): Promise<AuthResult<MyTenant[]>> => {
+      const result = await readJson('/api/me/tenants', {}, parser(MyTenantsResponseSchema));
+      return result.ok ? { ok: true, value: result.value.tenants } : result;
+    },
+
+    tenantMe: (tenantId: string): Promise<AuthResult<TenantMeResponse>> =>
+      readJson(`${tenantBase(tenantId)}/me`, {}, parser(TenantMeResponseSchema)),
+
+    selectTenant: (tenantId: string) =>
+      sendWithoutContent(`${tenantBase(tenantId)}/selection`, 'POST'),
+
+    accessMembers: (tenantId: string): Promise<AuthResult<AccessMembersResponse>> =>
+      readJson(`${tenantBase(tenantId)}/access/members`, {}, parser(AccessMembersResponseSchema)),
+
+    assignRole: (tenantId: string, membershipId: string, role: RoleCode) =>
+      sendWithoutContent(`${memberBase(tenantId, membershipId)}/roles/${role}`, 'PUT'),
+
+    retireRole: (tenantId: string, membershipId: string, role: RoleCode) =>
+      sendWithoutContent(`${memberBase(tenantId, membershipId)}/roles/${role}`, 'DELETE'),
+
+    setMembershipStatus: (tenantId: string, membershipId: string, status: 'active' | 'revoked') =>
+      sendWithoutContent(`${memberBase(tenantId, membershipId)}/status`, 'PUT', { status }),
+
+    mfaStatus: (): Promise<AuthResult<MfaStatusResponse>> =>
+      readJson('/api/auth/mfa', {}, parser(MfaStatusResponseSchema)),
+
+    startMfaEnrollment: (input: MfaEnrollmentRequest): Promise<AuthResult<MfaEnrollmentResponse>> =>
+      postJson('/api/auth/mfa/enrollment', input, MfaEnrollmentResponseSchema),
+
+    confirmMfaEnrollment: (input: MfaConfirmRequest): Promise<AuthResult<MfaConfirmResponse>> =>
+      postJson('/api/auth/mfa/enrollment/confirm', input, MfaConfirmResponseSchema),
+
+    verifyMfa: (factor: MfaFactor) => sendWithoutContent('/api/auth/mfa/verify', 'POST', factor),
+
+    disableMfa: (input: MfaDisableRequest) =>
+      sendWithoutContent('/api/auth/mfa/disable', 'POST', input),
+
     currentSession: () => readJson('/api/auth/session', {}, parseCurrent),
 
     async login(credentials: LoginRequest): Promise<AuthResult<CurrentSessionResponse>> {
@@ -140,6 +223,56 @@ export function authFailureMessage(failure: AuthFailure): string {
       return 'No se pudo contactar a la API.';
     default:
       return 'Ocurrió un error inesperado.';
+  }
+}
+
+function waitMessage(failure: AuthFailure): string {
+  return failure.retryAfterSeconds === null
+    ? 'Demasiados intentos. Espera un momento.'
+    : `Demasiados intentos. Vuelve a intentar en ${formatWait(failure.retryAfterSeconds)}.`;
+}
+
+/** Mensajes del segundo factor. */
+export function mfaFailureMessage(failure: AuthFailure): string {
+  switch (failure.code) {
+    case 'invalid_mfa_code':
+      return 'El código no es válido o ya se usó. Espera el siguiente código e inténtalo de nuevo.';
+    case 'invalid_credentials':
+      return 'La contraseña no es correcta.';
+    case 'validation_failed':
+      return 'Revisa los datos: el código de la aplicación tiene seis dígitos.';
+    case 'conflict':
+      return 'La configuración venció. Empieza de nuevo.';
+    case 'mfa_enrollment_required':
+      return 'Primero configura la verificación en dos pasos.';
+    case 'rate_limited':
+      return waitMessage(failure);
+    default:
+      return authFailureMessage(failure);
+  }
+}
+
+/** Mensajes de empresas y accesos. */
+export function accessFailureMessage(failure: AuthFailure): string {
+  switch (failure.code) {
+    case 'not_found':
+      return 'No tienes acceso a esta empresa o ese registro ya no existe.';
+    case 'permission_denied':
+      return 'Tu rol no permite esta acción.';
+    case 'mfa_required':
+      return 'Completa la verificación en dos pasos para continuar.';
+    case 'mfa_enrollment_required':
+      return 'Configura la verificación en dos pasos en Mi cuenta para continuar.';
+    case 'last_admin':
+      return 'No se puede: la empresa debe conservar al menos una persona propietaria con acceso activo.';
+    case 'self_modification':
+      return 'No puedes cambiar tu propio acceso. Pídeselo a otra persona administradora.';
+    case 'conflict':
+      return 'La membresía está inactiva. Actívala antes de asignarle un rol.';
+    case 'rate_limited':
+      return waitMessage(failure);
+    default:
+      return authFailureMessage(failure);
   }
 }
 

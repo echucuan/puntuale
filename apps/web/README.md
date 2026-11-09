@@ -1,6 +1,6 @@
 # `@puntuale/web`
 
-> **Estado: Parcial (1.0-b.1).** Existen la pantalla de acceso y «Mi cuenta», con la gestión de sesiones. Las pantallas de asistencia y la PWA de marcación llegan en versiones posteriores.
+> **Estado: Parcial (1.0-b.2).** Existen la pantalla de acceso, «Mi cuenta» con sesiones y verificación en dos pasos, la selección de empresa, «Mi acceso» y «Accesos». Las pantallas de asistencia y la PWA de marcación llegan en versiones posteriores.
 
 ## Propósito
 
@@ -13,11 +13,12 @@ Interfaz web de Puntuale (React 19 + Vite 8), con la identidad visual del kit y 
 
 ## Dependencias
 
-| Depende de            | Para qué                    |
-| --------------------- | --------------------------- |
-| `@puntuale/contracts` | Contratos de las respuestas |
-| `@puntuale/ui`        | Tokens de marca y fuente    |
-| API (`pnpm dev`)      | Proxy de `/health` y `/api` |
+| Depende de            | Para qué                                                                     |
+| --------------------- | ---------------------------------------------------------------------------- |
+| `@puntuale/contracts` | Contratos de las respuestas                                                  |
+| `@puntuale/ui`        | Tokens de marca y fuente                                                     |
+| API (`pnpm dev`)      | Proxy de `/health` y `/api`                                                  |
+| `uqr`                 | Dibujar el QR de MFA en el navegador; el enlace no sale a servicios externos |
 
 ## Marca
 
@@ -31,17 +32,19 @@ Interfaz web de Puntuale (React 19 + Vite 8), con la identidad visual del kit y 
 
 ## Entradas y salidas
 
-| Llamada                                                                                   | Contrato                                        |
-| ----------------------------------------------------------------------------------------- | ----------------------------------------------- |
-| `GET /health`                                                                             | `HealthResponseSchema`                          |
-| `GET /api/auth/csrf`, `POST /api/auth/login`, `POST /api/auth/logout`                     | Contratos de `auth.ts` en `@puntuale/contracts` |
-| `GET /api/auth/session`, `GET /api/auth/sessions`, `DELETE /api/auth/sessions/:sessionId` | Contratos de `auth.ts` en `@puntuale/contracts` |
+| Llamada                                                                                           | Contrato                                                      |
+| ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| `GET /health`                                                                                     | `HealthResponseSchema`                                        |
+| `GET /api/auth/csrf`, `POST /api/auth/login`, `POST /api/auth/logout`                             | Contratos de `auth.ts` en `@puntuale/contracts`               |
+| `GET /api/auth/session`, `GET /api/auth/sessions`, `DELETE /api/auth/sessions/:sessionId`         | Contratos de `auth.ts` en `@puntuale/contracts`               |
+| Rutas de MFA en `/api/auth/mfa`, de empresas y de accesos ([contratos](../../docs/api/README.md)) | Contratos de `auth.ts` y `access.ts` en `@puntuale/contracts` |
 
 ## Pruebas relacionadas
 
 - `src/api/health.test.ts`: traducción de la respuesta de salud y falla de red.
 - `src/api/auth.test.ts`: cliente de sesión, mensajes de error, espera por demasiados intentos y formato del tiempo restante.
 - `src/auth/device-label.test.ts`: nombre orientativo del dispositivo.
+- `src/routing.test.ts`: rutas por empresa y direcciones no válidas.
 
 ## Cómo extenderlo
 

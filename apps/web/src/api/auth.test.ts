@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { authFailureMessage, createAuthApi, formatWait, toFormFeedback } from './auth';
+import {
+  accessFailureMessage,
+  authFailureMessage,
+  createAuthApi,
+  formatWait,
+  mfaFailureMessage,
+  toFormFeedback,
+} from './auth';
 
 const SESSION = {
   user: {
@@ -13,6 +20,7 @@ const SESSION = {
     lastActivityAt: '2026-11-08T18:00:00.000Z',
     idleExpiresAt: '2026-11-08T18:30:00.000Z',
     expiresAt: '2026-11-09T06:00:00.000Z',
+    mfaVerified: false,
   },
   csrfToken: 'token-de-sesion',
 };
@@ -119,5 +127,53 @@ describe('authFailureMessage', () => {
     expect(authFailureMessage({ code: 'invalid_credentials', retryAfterSeconds: null })).toBe(
       'Correo o contraseña incorrectos.',
     );
+  });
+});
+
+describe('mensajes de acceso y MFA', () => {
+  const failure = (code: string, retryAfterSeconds: number | null = null) => ({
+    code,
+    retryAfterSeconds,
+  });
+
+  it('explican cada rechazo de accesos', () => {
+    expect(accessFailureMessage(failure('last_admin'))).toContain('propietaria con acceso');
+    expect(accessFailureMessage(failure('self_modification'))).toContain('tu propio acceso');
+    expect(accessFailureMessage(failure('permission_denied'))).toContain('Tu rol');
+    expect(accessFailureMessage(failure('not_found'))).toContain('No tienes acceso');
+  });
+
+  it('distinguen contraseña, código y espera', () => {
+    expect(mfaFailureMessage(failure('invalid_credentials'))).toBe('La contraseña no es correcta.');
+    expect(mfaFailureMessage(failure('invalid_mfa_code'))).toContain('ya se usó');
+    expect(mfaFailureMessage(failure('rate_limited', 125))).toContain('2 min 5 s');
+  });
+});
+
+describe('accesos y MFA en el cliente', () => {
+  const ROLE_URL = '/api/t/t1/access/members/m1/roles/auditor';
+
+  it('asignar un rol envía CSRF y usa la empresa de la URL', async () => {
+    const { api, calls } = recording((path) =>
+      path === '/api/auth/csrf'
+        ? json(200, { csrfToken: 'abc' })
+        : new Response(null, { status: 204 }),
+    );
+    const result = await api.assignRole('t1', 'm1', 'auditor');
+    expect(result.ok).toBe(true);
+    expect(calls[1]!.path).toBe(ROLE_URL);
+    expect(calls[1]!.init.method).toBe('PUT');
+    expect((calls[1]!.init.headers as Record<string, string>)['X-CSRF-Token']).toBe('abc');
+  });
+
+  it('entrega el código de rechazo de la API', async () => {
+    const { api } = recording(() =>
+      json(403, { error: { code: 'mfa_required', message: 'x', requestId: 'r' } }),
+    );
+    const result = await api.accessMembers('t1');
+    expect(result).toEqual({
+      ok: false,
+      failure: { code: 'mfa_required', retryAfterSeconds: null },
+    });
   });
 });

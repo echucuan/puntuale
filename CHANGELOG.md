@@ -10,6 +10,7 @@ Todos los cambios relevantes del proyecto se registran aquí. El formato se basa
 - Consulta y selección de empresa, identidad propia por empresa, vista de accesos, asignación y retiro de roles, activación y desactivación de membresías, con auditoría en la misma transacción.
 - `PermissionGuard` con denegación predeterminada y permisos de módulos futuros reservados.
 - MFA TOTP con secreto cifrado, protección contra reutilización, códigos de recuperación de un solo uso, límite de intentos y reautenticación para reemplazar o desactivar.
+- Pantallas web: selección de empresa, «Mi acceso», «Accesos» y configuración de MFA en «Mi cuenta».
 - La semilla crea una empresa piloto ficticia, dos colaboradores y una cuenta administradora separada.
 
 ### Cambiado
